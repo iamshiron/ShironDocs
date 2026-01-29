@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/cli/">
+    <Project Path="src/cli/Shiron.Docs.CLI.csproj" />
+  </Folder>
+  <Folder Name="/src/engine/">
+    <Project Path="src/engine/Shiron.Docs.Engine.csproj" />
+  </Folder>
+</Solution>
