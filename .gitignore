@@ -1,7 +1,6 @@
 **/bin
 **/obj
 
-run/
 node_modules/
 
 template.html

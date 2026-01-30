@@ -1,6 +1,7 @@
 ﻿
 using System.Globalization;
 using Shiron.Docs.Cli.Commands;
+using Shiron.Docs.Cli.Commands.New;
 using Spectre.Console.Cli;
 
 #if DEBUG
@@ -19,6 +20,16 @@ app.Configure(c => {
     _ = c.SetApplicationCulture(CultureInfo.CurrentCulture);
 
     _ = c.AddCommand<CommandBootstrap>("bootstrap");
+    _ = c.AddCommand<CommandBuild>("build");
+    _ = c.AddCommand<CommandDev>("dev");
+    _ = c.AddCommand<CommandStart>("start");
+    _ = c.AddCommand<CommandInit>("init");
+
+    _ = c.AddBranch("new", b => {
+        b.SetDescription("Create new content for the documentation site.");
+
+        _ = b.AddCommand<CommandNewPage>("page");
+    });
 });
 
 await app.RunAsync(args);

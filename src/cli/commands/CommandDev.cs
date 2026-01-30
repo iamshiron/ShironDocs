@@ -1,18 +1,15 @@
 
 using System.ComponentModel;
-using System.Text.Json;
-using Shiron.Docs.Cli.Utils;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shiron.Docs.Cli.Commands;
 
-[Description("Bootstraps the Shiron Docs environment including the Vite project.")]
-public sealed class CommandBootstrap : AsyncCommand<CommandBootstrap.Settings> {
+[Description("Builds the Shiron Docs static site. And starts a local Vite server to preview the site.")]
+public sealed class CommandDev : AsyncCommand<CommandDev.Settings> {
     public class Settings : CommandSettings {
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
-        throw new NotFiniteNumberException();
+        throw new NotImplementedException();
     }
 }
