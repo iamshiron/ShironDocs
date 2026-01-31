@@ -240,7 +240,6 @@ public static class XMLDocExtractor {
         return [.. tokens];
     }
 
-
     public static ListToken ParseList(XElement e) {
         var items = new List<IDocumentationToken[]>();
         foreach (var n in e.Nodes()) {

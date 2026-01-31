@@ -1,9 +1,16 @@
 <Solution>
-  <Folder Name="/src/" />
-  <Folder Name="/src/cli/">
-    <Project Path="src/cli/Shiron.Docs.CLI.csproj" />
-  </Folder>
-  <Folder Name="/src/engine/">
-    <Project Path="src/engine/Shiron.Docs.Engine.csproj" />
-  </Folder>
+    <Folder Name="/External/">
+        <Project Path="external/lib/src/Logging/Shiron.Lib.Logging.csproj" />
+        <Project Path="external/lib/src/Networking/Shiron.Lib.Networking.csproj" />
+        <Project Path="external/lib/src/Profiling/Shiron.Lib.Profiling.csproj" />
+        <Project Path="external/lib/src/Utils/Shiron.Lib.Utils.csproj" />
+    </Folder>
+
+    <Folder Name="/src/" />
+    <Folder Name="/src/cli/">
+        <Project Path="src/cli/Shiron.Docs.CLI.csproj" />
+    </Folder>
+    <Folder Name="/src/engine/">
+        <Project Path="src/engine/Shiron.Docs.Engine.csproj" />
+    </Folder>
 </Solution>
