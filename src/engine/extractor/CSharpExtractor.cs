@@ -115,7 +115,6 @@ public class CSharpExtractor {
             Methods: new ConcurrentDictionary<string, MethodSymbol>(),
             Properties: new ConcurrentDictionary<string, PropertySymbol>(),
             Fields: new ConcurrentDictionary<string, FieldSymbol>(),
-            Enums: new ConcurrentDictionary<string, EnumSymbol>(),
             Errors: new ConcurrentDictionary<string, ErrorSymbol>()
         );
 
@@ -158,6 +157,11 @@ public class CSharpExtractor {
     }
 
     public async Task<bool> ExtractTypeAsync(string id, ITypeSymbol typeSymbol, AssemblyData context) {
+        // Override for various type kinds
+        if (typeSymbol.TypeKind == TypeKind.Enum) {
+            return ExtractEnum(id, (INamedTypeSymbol) typeSymbol, context);
+        }
+
         var symbol = new TypeSymbol(
             Name: typeSymbol.Name
         );
@@ -219,6 +223,40 @@ public class CSharpExtractor {
             TypeName: GetDisplayName(fieldSymbol.Type)
         );
         context.Fields[id] = symbol;
+        return true;
+    }
+
+    public bool ExtractEnum(string id, INamedTypeSymbol enumSymbol, AssemblyData context) {
+        if (enumSymbol.EnumUnderlyingType == null) {
+            throw new Exception($"Enum underlying type is null. Is {enumSymbol.Name} really an enum?");
+        }
+
+        var members = enumSymbol.GetMembers();
+        var options = new List<EnumItem>(members.Length);
+        foreach (var member in members) {
+            if (member.Kind == SymbolKind.Field && member is IFieldSymbol fs && fs.ConstantValue != null) {
+                var docID = GetDocID(fs);
+
+                options.Add(new EnumItem(
+                    Name: fs.Name,
+                    Value: fs.ConstantValue!.ToString()!,
+                    ID: docID
+                ));
+                context.Fields[docID] = new FieldSymbol(
+                    Name: fs.Name,
+                    TypeID: GetDocID(fs.Type),
+                    TypeName: GetDisplayName(fs.Type)
+                );
+            }
+        }
+
+        var symbol = new EnumSymbol(
+            Name: enumSymbol.Name,
+            UnderlyingTypeID: GetDocID(enumSymbol.EnumUnderlyingType),
+            UnderlyingTypeName: GetDisplayName(enumSymbol.EnumUnderlyingType),
+            Options: [.. options]
+        );
+        context.Types[id] = symbol;
         return true;
     }
 }

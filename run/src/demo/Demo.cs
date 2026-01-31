@@ -7,6 +7,12 @@ public class DemoClass {
         }
     }
 
+    public enum DemoInnerEnum {
+        OptionA,
+        OptionB,
+        OptionC
+    }
+
     public string Name { get; set; } = string.Empty;
     public int Value { get; private set; } = 0;
 
@@ -55,4 +61,10 @@ public sealed class DemoSealedClass : IDemoInterface {
     public void InterfaceMethod() {
         Console.WriteLine("Interface method implemented.");
     }
+}
+
+public enum DemoEnum {
+    FirstOption,
+    SecondOption,
+    ThirdOption
 }
