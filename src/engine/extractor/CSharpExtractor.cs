@@ -228,7 +228,9 @@ public class CSharpExtractor {
             return false;
         }
 
+        var xmlDoc = XElement.Parse($"<root>{methodSymbol.GetDocumentationCommentXml()}</root>");
         var parameters = new ParameterItem[methodSymbol.Parameters.Length];
+        var parametersDoc = XMLDocExtractor.GetParam(xmlDoc.Descendants("param"));
 
         for (int i = 0; i < methodSymbol.Parameters.Length; i++) {
             var param = methodSymbol.Parameters[i];
@@ -236,11 +238,10 @@ public class CSharpExtractor {
                 Name: param.Name,
                 TypeID: GetDocID(param.Type),
                 TypeName: GetDisplayName(param.Type),
-                Documentation: null
+                Documentation: parametersDoc.GetValueOrDefault(param.Name)
             );
         }
 
-        var xmlDoc = XElement.Parse($"<root>{methodSymbol.GetDocumentationCommentXml()}</root>");
         var symbol = new MethodSymbol(
             Name: methodSymbol.Name,
             ReturnTypeID: GetDocID(methodSymbol.ReturnType),

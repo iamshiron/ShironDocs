@@ -12,6 +12,20 @@ public static class XMLDocExtractor {
         return PackTokens(ParseNode(node));
     }
 
+    public static Dictionary<string, IDocumentationToken?> GetParam(IEnumerable<XElement> node) {
+        var res = new Dictionary<string, IDocumentationToken?>();
+
+        foreach (var param in node) {
+            var nameAttr = param.Attribute("name");
+            if (nameAttr == null) {
+                continue;
+            }
+
+            res[nameAttr.Value] = PackTokens(ParseNode(param));
+        }
+        return res;
+    }
+
     public static IDocumentationToken[] ParseNode(XNode? node) {
         if (node == null) {
             return [new TextToken("")];
