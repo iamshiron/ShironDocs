@@ -105,9 +105,45 @@ public class CSharpExtractor {
             Name: assembly.Name,
             Version: assembly.Identity.Version.ToString(),
             CSProjFile: PathRelativeTo(project.FilePath!),
-            Symbols: new List<DocumentationSymbol>(),
-            MethodMetadata: new List<MethodData>()
+            [], [], [], [], [], [], [] // Initialize dictionaries as empty
         );
+
+        var types = GetNamedTypes(assembly, assembly.GlobalNamespace);
+        foreach (var type in types) {
+            var id = GetDocID(type);
+            Console.WriteLine($"Processing type: {id}");
+
+            switch (type) {
+                case ITypeSymbol typeSymbol:
+                    assemblyData.Types[id] = await ExtractTypeSymbolAsync(typeSymbol);
+                    break;
+            }
+        }
+
         return assemblyData;
+    }
+
+    public async Task<TypeSymbol> ExtractTypeSymbolAsync(ITypeSymbol typeSymbol) {
+        var res = new TypeSymbol(
+            Name: typeSymbol.Name,
+            [], [], []
+        );
+
+        foreach (var member in typeSymbol.GetMembers()) {
+            var memberID = GetDocID(member);
+            switch (member) {
+                case IMethodSymbol:
+                    res.MethodIDs.Add(memberID);
+                    break;
+                case IPropertySymbol:
+                    res.PropertyIDs.Add(memberID);
+                    break;
+                case IFieldSymbol:
+                    res.FieldIDs.Add(memberID);
+                    break;
+            }
+        }
+
+        return res;
     }
 }

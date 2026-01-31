@@ -1,58 +1,44 @@
 
 namespace Shiron.Docs.Engine.Model;
 
-public enum SymbolKind {
-    Namespace, Class, Interface, Struct, Enum, Method, Property, Field
-}
-public enum TypeFlags {
-    None = 0,
-    Abstract = 1 << 0,
-    Sealed = 1 << 1,
-    Static = 1 << 2,
-    Readonly = 1 << 3,
-    Partial = 1 << 4
-}
-public enum MethodFlags {
-    None = 0,
-    Static = 1 << 0,
-    Abstract = 1 << 1,
-    Virtual = 1 << 2,
-    Override = 1 << 3,
-    Async = 1 << 4
-}
-public enum AccessFlags {
-    None = 0,
-    Public = 1 << 0,
-    Private = 1 << 1,
-    Protected = 1 << 2,
-    Internal = 1 << 3
-}
-
-public record DocumentationSymbol(
-    string ID,
-    SymbolKind Kind,
-    string DisplayName,
-    string Name,
-    string FullName,
-    AccessFlags Access,
-    List<string> ChildrenIDs
-);
-
-public record ParameterData(
+public record ParameterItem(
     string Name,
     string TypeID
 );
-public record MethodData(
-    string ID,
+
+public record NamespaceSymbol(
+);
+public record TypeSymbol(
+    string Name,
+    List<string> MethodIDs,
+    List<string> PropertyIDs,
+    List<string> FieldIDs
+);
+public record MemberSymbol(
+);
+public record PropertySymbol(
+);
+public record FieldSymbol(
+);
+public record EnumSymbol(
+);
+public record MethodSymbol(
+    string Name,
     string ReturnTypeID,
-    List<ParameterData> Parameters,
-    MethodFlags Flags
+    List<ParameterItem> Parameters
+);
+public record ErrorSymbol(
 );
 
 public record AssemblyData(
     string Name,
     string Version,
     string CSProjFile,
-    List<DocumentationSymbol> Symbols,
-    List<MethodData> MethodMetadata
+    Dictionary<string, NamespaceSymbol> Namespaces,
+    Dictionary<string, TypeSymbol> Types,
+    Dictionary<string, MethodSymbol> Methods,
+    Dictionary<string, PropertySymbol> Properties,
+    Dictionary<string, FieldSymbol> Fields,
+    Dictionary<string, EnumSymbol> Enums,
+    Dictionary<string, ErrorSymbol> Errors
 );
