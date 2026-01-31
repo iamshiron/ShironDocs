@@ -126,25 +126,60 @@ public class CSharpExtractor {
     public async Task ExtractSymbolAsync(ISymbol typeSymbol, AssemblyData context, ISymbolContainer? parent = null) {
         var id = GetDocID(typeSymbol);
 
+        var addChild = false;
         switch (typeSymbol) {
             case ITypeSymbol s:
-                await ExtractTypeAsync(id, s, context);
-                parent?.ChildIDs.Add(id);
-
+                addChild = await ExtractTypeAsync(id, s, context);
                 break;
+
+            case IMethodSymbol s:
+                addChild = ExtractMethod(id, s, context);
+                break;
+
             default:
                 break;
         }
+
+        if (addChild && parent != null) {
+            parent.ChildIDs.Add(id);
+        }
     }
 
-    public async Task ExtractTypeAsync(string id, ITypeSymbol typeSymbol, AssemblyData context) {
-        var type = new TypeSymbol(
+    public async Task<bool> ExtractTypeAsync(string id, ITypeSymbol typeSymbol, AssemblyData context) {
+        var symbol = new TypeSymbol(
             Name: typeSymbol.Name
         );
-        context.Types[id] = type;
+        context.Types[id] = symbol;
 
         foreach (var member in typeSymbol.GetMembers()) {
-            await ExtractSymbolAsync(member, context, type);
+            await ExtractSymbolAsync(member, context, symbol);
         }
+
+        return true;
+    }
+
+    public bool ExtractMethod(string id, IMethodSymbol methodSymbol, AssemblyData context) {
+        // Only extract ordinary methods and constructors
+        if (methodSymbol.MethodKind != MethodKind.Ordinary && methodSymbol.MethodKind != MethodKind.Constructor) {
+            return false;
+        }
+
+        var parameters = new ParameterItem[methodSymbol.Parameters.Length];
+
+        for (int i = 0; i < methodSymbol.Parameters.Length; i++) {
+            var param = methodSymbol.Parameters[i];
+            parameters[i] = new ParameterItem(
+                Name: param.Name,
+                TypeID: GetDocID(param.Type)
+            );
+        }
+
+        var symbol = new MethodSymbol(
+            Name: methodSymbol.Name,
+            ReturnTypeID: methodSymbol.ReturnType.ToDisplayString(),
+            Parameters: parameters
+        );
+        context.Methods[id] = symbol;
+        return true;
     }
 }

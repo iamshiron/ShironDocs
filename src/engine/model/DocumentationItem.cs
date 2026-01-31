@@ -31,7 +31,7 @@ public record EnumSymbol(
 public record MethodSymbol(
     string Name,
     string ReturnTypeID,
-    List<ParameterItem> Parameters
+    ParameterItem[] Parameters
 );
 public record ErrorSymbol(
 );

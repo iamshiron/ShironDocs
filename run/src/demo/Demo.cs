@@ -40,6 +40,12 @@ public class DemoClass {
         await Task.Delay(delayMilliseconds);
         return "Async method completed.";
     }
+
+    public void LambdaMethod(Func<int, int> transformer) {
+        int original = 10;
+        int transformed = transformer(original);
+        Console.WriteLine($"Original: {original}, Transformed: {transformed}");
+    }
 }
 
 public interface IDemoInterface {
