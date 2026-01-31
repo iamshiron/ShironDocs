@@ -98,6 +98,10 @@ public class CSharpExtractor {
         return res;
     }
 
+    private string GetDisplayName(ISymbol symbol) {
+        return symbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+    }
+
     public async Task<AssemblyData> ExtractAssemblyAsync(Project project) {
         var compilation = await GetCompilationAsync(project);
         var assembly = compilation.Assembly;
@@ -136,6 +140,10 @@ public class CSharpExtractor {
                 addChild = ExtractMethod(id, s, context);
                 break;
 
+            case IPropertySymbol s:
+                addChild = ExtractProperty(id, s, context);
+                break;
+
             default:
                 break;
         }
@@ -171,17 +179,27 @@ public class CSharpExtractor {
             parameters[i] = new ParameterItem(
                 Name: param.Name,
                 TypeID: GetDocID(param.Type),
-                TypeName: param.Type.ToDisplayString()
+                TypeName: GetDisplayName(param.Type)
             );
         }
 
         var symbol = new MethodSymbol(
             Name: methodSymbol.Name,
             ReturnTypeID: GetDocID(methodSymbol.ReturnType),
-            ReturnTypeName: methodSymbol.ReturnType.ToDisplayString(),
+            ReturnTypeName: GetDisplayName(methodSymbol.ReturnType),
             Parameters: parameters
         );
         context.Methods[id] = symbol;
+        return true;
+    }
+
+    public bool ExtractProperty(string id, IPropertySymbol propertySymbol, AssemblyData context) {
+        var symbol = new PropertySymbol(
+            Name: propertySymbol.Name,
+            TypeID: GetDocID(propertySymbol.Type),
+            TypeName: GetDisplayName(propertySymbol.Type)
+        );
+        context.Properties[id] = symbol;
         return true;
     }
 }

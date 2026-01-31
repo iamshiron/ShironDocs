@@ -24,6 +24,9 @@ public record TypeSymbol(
 public record MemberSymbol(
 );
 public record PropertySymbol(
+    string Name,
+    string TypeID,
+    string TypeName
 );
 public record FieldSymbol(
 );
