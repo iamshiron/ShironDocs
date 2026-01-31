@@ -1,4 +1,5 @@
 
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Build.Locator;
@@ -13,8 +14,8 @@ public class CSharpExtractor {
     private readonly MSBuildWorkspace _workspace;
     private List<Project> _projects = [];
 
-    private Dictionary<string, Compilation> _compilationCache = [];
-    private Dictionary<ISymbol, string> _docIDCache = [];
+    private ConcurrentDictionary<string, Compilation> _compilationCache = [];
+    private ConcurrentDictionary<ISymbol, string> _docIDCache = [];
 
     public static void Init() {
         MSBuildLocator.RegisterDefaults();
@@ -91,18 +92,19 @@ public class CSharpExtractor {
     public async Task<List<AssemblyData>> ExtractAsync() {
         Console.WriteLine($"Root Path: {_root}");
 
-        var res = new List<AssemblyData>();
-        foreach (var project in _projects) {
-            res.Add(await ExtractAssemblyAsync(project));
-        }
-        return res;
+        var res = new ConcurrentBag<AssemblyData>();
+        await Parallel.ForEachAsync(_projects, async (project, ct) => {
+            var data = await ExtractProjectAsync(project);
+            res.Add(data);
+        });
+        return [.. res];
     }
 
     private string GetDisplayName(ISymbol symbol) {
         return symbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
     }
 
-    public async Task<AssemblyData> ExtractAssemblyAsync(Project project) {
+    public async Task<AssemblyData> ExtractProjectAsync(Project project) {
         var compilation = await GetCompilationAsync(project);
         var assembly = compilation.Assembly;
 
@@ -129,18 +131,13 @@ public class CSharpExtractor {
         return assemblyData;
     }
 
-    private string GetNamespaceID(INamespaceSymbol symbol) => $"N:{symbol.ToDisplayString()}";
-
     private void BuildNamespaceTree(IEnumerable<ITypeSymbol> types, AssemblyData context) {
-        // 1. Get unique namespaces only (Performance Win)
-        // SymbolEqualityComparer is crucial for Roslyn keys
         var uniqueNamespaces = types
             .Select(t => t.ContainingNamespace)
             .Where(n => n != null && !n.IsGlobalNamespace)
             .Distinct(SymbolEqualityComparer.Default)
             .Cast<INamespaceSymbol>();
 
-        // 2. Build the skeleton for these few namespaces
         foreach (var ns in uniqueNamespaces) {
             EnsureNamespaceRecursive(ns, context);
         }

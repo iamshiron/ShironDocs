@@ -42,7 +42,10 @@ CSharpExtractor.Init();
 var extractor = new CSharpExtractor();
 extractor.AddProject("./src/demo/Shiron.DemoProject.csproj");
 
+long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 var res = await extractor.ExtractAsync();
+long endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+Console.WriteLine($"Extraction completed in {endTime - startTime} ms.");
 
 if (File.Exists("output.json")) {
     File.Delete("output.json");
