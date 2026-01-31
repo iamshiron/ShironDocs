@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Shiron.Docs.Cli.Commands;
 using Shiron.Docs.Cli.Commands.New;
 using Shiron.Docs.Engine.Extractor;
+using Shiron.Docs.Engine.Model;
 using Spectre.Console.Cli;
 
 #if DEBUG
@@ -40,6 +41,12 @@ app.Configure(c => {
 
 await app.RunAsync(args);
 
+var jsonSerializerOptions = new JsonSerializerOptions {
+    WriteIndented = true,
+    IndentSize = 4
+};
+jsonSerializerOptions.Converters.Add(new TokenTypeConverter());
+
 #pragma warning disable CS8321 // Local function is declared but never used
 async Task RunDemoProject() {
     Console.WriteLine("Running demo project extraction...");
@@ -56,10 +63,7 @@ async Task RunDemoProject() {
         File.Delete("output.json");
     }
     var fileStream = File.Create("output.json");
-    await JsonSerializer.SerializeAsync(fileStream, res, new JsonSerializerOptions {
-        WriteIndented = true,
-        IndentSize = 4
-    });
+    await JsonSerializer.SerializeAsync(fileStream, res, jsonSerializerOptions);
     fileStream.Close();
 }
 
@@ -93,14 +97,11 @@ async Task RunStandardLibrary() {
         File.Delete("System.Private.CoreLib.json");
     }
     var fileStream = File.Create("System.Private.CoreLib.json");
-    await JsonSerializer.SerializeAsync(fileStream, res, new JsonSerializerOptions {
-        WriteIndented = true,
-        IndentSize = 4
-    });
+    await JsonSerializer.SerializeAsync(fileStream, res, jsonSerializerOptions);
     fileStream.Close();
 }
 #pragma warning restore CS8321 // Local function is declared but never used
 
 CSharpExtractor.Init();
-//await RunDemoProject();
-await RunStandardLibrary();
+await RunDemoProject();
+// await RunStandardLibrary();

@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Xml;
+using System.Xml.Linq;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
@@ -206,7 +208,10 @@ public class CSharpExtractor {
         }
 
         var symbol = new TypeSymbol(
-            Name: typeSymbol.Name
+            Name: typeSymbol.Name,
+            ChildIDs: [],
+            Summary: null,
+            Remarks: null
         );
         context.Types[id] = symbol;
 
@@ -229,7 +234,8 @@ public class CSharpExtractor {
             parameters[i] = new ParameterItem(
                 Name: param.Name,
                 TypeID: GetDocID(param.Type),
-                TypeName: GetDisplayName(param.Type)
+                TypeName: GetDisplayName(param.Type),
+                Documentation: null
             );
         }
 
@@ -237,7 +243,9 @@ public class CSharpExtractor {
             Name: methodSymbol.Name,
             ReturnTypeID: GetDocID(methodSymbol.ReturnType),
             ReturnTypeName: GetDisplayName(methodSymbol.ReturnType),
-            Parameters: parameters
+            Parameters: parameters,
+            Summary: null,
+            Remarks: null
         );
         context.Methods[id] = symbol;
         return true;
@@ -247,7 +255,9 @@ public class CSharpExtractor {
         var symbol = new PropertySymbol(
             Name: propertySymbol.Name,
             TypeID: GetDocID(propertySymbol.Type),
-            TypeName: GetDisplayName(propertySymbol.Type)
+            TypeName: GetDisplayName(propertySymbol.Type),
+            Summary: null,
+            Remarks: null
         );
         context.Properties[id] = symbol;
         return true;
@@ -262,7 +272,9 @@ public class CSharpExtractor {
         var symbol = new FieldSymbol(
             Name: fieldSymbol.Name,
             TypeID: GetDocID(fieldSymbol.Type),
-            TypeName: GetDisplayName(fieldSymbol.Type)
+            TypeName: GetDisplayName(fieldSymbol.Type),
+            Summary: null,
+            Remarks: null
         );
         context.Fields[id] = symbol;
         return true;
@@ -273,6 +285,11 @@ public class CSharpExtractor {
             throw new Exception($"Enum underlying type is null. Is {enumSymbol.Name} really an enum?");
         }
 
+        List<IDocumentationToken> tokens = [];
+
+        var root = XElement.Parse($"<root>{enumSymbol.GetDocumentationCommentXml()}</root>");
+        var summaryTokens = XMLDocExtractor.Get(root.Descendants("summary").FirstOrDefault());
+
         var members = enumSymbol.GetMembers();
         var options = new List<EnumItem>(members.Length);
         foreach (var member in members) {
@@ -282,12 +299,16 @@ public class CSharpExtractor {
                 options.Add(new EnumItem(
                     Name: fs.Name,
                     Value: fs.ConstantValue!.ToString()!,
-                    ID: docID
+                    ID: docID,
+                    Summary: null,
+                    Remarks: null
                 ));
                 context.Fields[docID] = new FieldSymbol(
                     Name: fs.Name,
                     TypeID: GetDocID(fs.Type),
-                    TypeName: GetDisplayName(fs.Type)
+                    TypeName: GetDisplayName(fs.Type),
+                    Summary: null,
+                    Remarks: null
                 );
             }
         }
@@ -296,8 +317,11 @@ public class CSharpExtractor {
             Name: enumSymbol.Name,
             UnderlyingTypeID: GetDocID(enumSymbol.EnumUnderlyingType),
             UnderlyingTypeName: GetDisplayName(enumSymbol.EnumUnderlyingType),
-            Options: [.. options]
+            Options: [.. options],
+            Summary: summaryTokens,
+            Remarks: null
         );
+
         context.Types[id] = symbol;
         return true;
     }

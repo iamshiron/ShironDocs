@@ -32,6 +32,17 @@ public class DemoClass {
 
     /// <summary>
     /// Defines the illusion of choice.
+    /// <list type="bullet">
+    /// <item>
+    /// OptionA: The safe path.
+    /// </item>
+    /// <item>
+    /// OptionB: The adventurous path.
+    /// </item>
+    /// <item>
+    /// OptionC: The chaotic path.
+    /// </item>
+    /// </list>
     /// </summary>
     public enum DemoInnerEnum {
         /// <summary>
@@ -185,6 +196,9 @@ public sealed class DemoSealedClass : IDemoInterface {
 /// <summary>
 /// An enumeration of life choices.
 /// </summary>
+/// <remarks>
+/// Choosing an option here is like choosing a path in life; each has its own consequences, none of which can be undone.
+/// </remarks>
 public enum DemoEnum {
     /// <summary>
     /// The vanilla option. Safe, reliable, boring.
@@ -198,4 +212,67 @@ public enum DemoEnum {
     /// The option that makes you question why you started this enumeration in the first place.
     /// </summary>
     ThirdOption
+}
+
+/// <summary>
+/// A "Kitchen Sink" class used to stress-test the <see cref="Shiron.Docs.Engine.Extractor"/> logic.
+/// </summary>
+/// <remarks>
+/// This class demonstrates complex XML documentation features.
+/// <para>
+/// It supports <strong>bold</strong> (if your parser allows raw HTML) or <c>inline code</c> mixed with text.
+/// </para>
+/// <list type="bullet">
+///     <item>
+///         <term>Robustness</term>
+///         <description>Ensures the <see cref="XmlNodeToTokens"/> method doesn't crash.</description>
+///     </item>
+///     <item>
+///         <term>Recursion</term>
+///         <description>Handles nested tags like <c>code</c> inside lists.</description>
+///     </item>
+/// </list>
+/// </remarks>
+/// <seealso cref="System.String"/>
+public class XmlStressTest {
+    /// <summary>
+    /// Processes data with extreme prejudice.
+    /// </summary>
+    /// <typeparam name="T">The type of data to process. Must implement <see cref="IDisposable"/>.</typeparam>
+    /// <param name="input">
+    /// The input data.
+    /// <para>
+    /// If null, this method throws an <see cref="ArgumentNullException"/>.
+    /// </para>
+    /// </param>
+    /// <param name="mode">
+    /// The execution mode.
+    /// <list type="number">
+    ///     <item>0: Fast mode (unsafe)</item>
+    ///     <item>1: Safe mode (slow)</item>
+    /// </list>
+    /// </param>
+    /// <returns>
+    /// A generic wrapper around <paramref name="input"/> containing the results.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown if the <paramref name="mode"/> is invalid.</exception>
+    /// <example>
+    /// Here is how you use this method:
+    /// <code>
+    /// var processor = new XmlStressTest();
+    /// var result = processor.Process&lt;int&gt;(42, 1);
+    /// Console.WriteLine(result);
+    /// </code>
+    /// </example>
+    public T Process<T>(T input, int mode) where T : IDisposable {
+        return input;
+    }
+
+    /// <summary>
+    /// Gets or sets the configuration level.
+    /// </summary>
+    /// <value>
+    /// An integer representing the level. Default is <c>10</c>.
+    /// </value>
+    public int Level { get; set; }
 }
