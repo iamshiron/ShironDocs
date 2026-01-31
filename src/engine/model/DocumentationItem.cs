@@ -5,7 +5,8 @@ namespace Shiron.Docs.Engine.Model;
 
 public record ParameterItem(
     string Name,
-    string TypeID
+    string TypeID,
+    string TypeName
 );
 
 public interface ISymbolContainer {
@@ -31,6 +32,7 @@ public record EnumSymbol(
 public record MethodSymbol(
     string Name,
     string ReturnTypeID,
+    string ReturnTypeName,
     ParameterItem[] Parameters
 );
 public record ErrorSymbol(

@@ -170,13 +170,15 @@ public class CSharpExtractor {
             var param = methodSymbol.Parameters[i];
             parameters[i] = new ParameterItem(
                 Name: param.Name,
-                TypeID: GetDocID(param.Type)
+                TypeID: GetDocID(param.Type),
+                TypeName: param.Type.ToDisplayString()
             );
         }
 
         var symbol = new MethodSymbol(
             Name: methodSymbol.Name,
-            ReturnTypeID: methodSymbol.ReturnType.ToDisplayString(),
+            ReturnTypeID: GetDocID(methodSymbol.ReturnType),
+            ReturnTypeName: methodSymbol.ReturnType.ToDisplayString(),
             Parameters: parameters
         );
         context.Methods[id] = symbol;
