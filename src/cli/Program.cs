@@ -1,7 +1,11 @@
 ﻿
 using System.Globalization;
+using System.Text.Json;
+using Microsoft.Build.Locator;
+using Microsoft.CodeAnalysis.MSBuild;
 using Shiron.Docs.Cli.Commands;
 using Shiron.Docs.Cli.Commands.New;
+using Shiron.Docs.Engine.Extractor;
 using Spectre.Console.Cli;
 
 #if DEBUG
@@ -33,3 +37,19 @@ app.Configure(c => {
 });
 
 await app.RunAsync(args);
+
+CSharpExtractor.Init();
+var extractor = new CSharpExtractor();
+extractor.AddProject("./src/demo/Shiron.DemoProject.csproj");
+
+var res = await extractor.ExtractAsync();
+
+if (File.Exists("output.json")) {
+    File.Delete("output.json");
+}
+var fileStream = File.Create("output.json");
+await JsonSerializer.SerializeAsync(fileStream, res, new JsonSerializerOptions {
+    WriteIndented = true,
+    IndentSize = 4
+});
+fileStream.Close();
