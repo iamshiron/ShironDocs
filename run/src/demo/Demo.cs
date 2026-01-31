@@ -56,7 +56,7 @@ public class DemoClass {
         /// </summary>
         OptionB,
         /// <summary>
-        /// The option you pick when you want to watch the world burn.
+        /// The option you pick when you want to watch the world <strong>burn</strong>.
         /// </summary>
         OptionC
     }
@@ -170,6 +170,20 @@ public class DemoClass {
         int transformed = transformer(original);
         Console.WriteLine($"Original: {original}, Transformed: {transformed}");
     }
+
+    /// <summary>
+    /// A method that has been deprecated, like a VHS tape in the age of streaming.
+    /// </summary>
+    /// <remarks>
+    /// Use <see cref="NewMethod"/> instead, because progress marches on, whether we like it or not.
+    /// </remarks>
+    [Obsolete("This method is obsolete. Use NewMethod instead.")]
+    public void DeprecatedMethod() {
+        Console.WriteLine("This method is deprecated. Use NewMethod instead.");
+    }
+    public void NewMethod() {
+        Console.WriteLine("This is the new and improved method.");
+    }
 }
 
 /// <summary>
@@ -277,4 +291,32 @@ public class XmlStressTest {
     /// An integer representing the level. Default is <c>10</c>.
     /// </value>
     public int Level { get; set; }
+
+    /// <summary>
+    /// Renders a <b>chaotic <i>symphony <u>of <c>styles</c></u></i></b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method is a test for <b><i><u><s>MAXIMUM OVERKILL</s></u></i></b> styling.
+    /// </para>
+    /// <para>
+    /// It verifies that:
+    /// <list type="bullet">
+    ///     <item>
+    ///         <b>Bold</b> can contain <i>Italic</i> which can contain <c>Code</c>.
+    ///     </item>
+    ///     <item>
+    ///         <s>Strikethrough</s> can silence a <see cref="System.Console.WriteLine()"/> link.
+    ///     </item>
+    ///     <item>
+    ///         <u>Underline</u> can hold a <b>Bold <i>Italic</i></b> truth.
+    ///     </item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// Corrected nesting: <b><i>Proper <u>nesting</u></i></b> works fine.
+    /// </para>
+    /// </remarks>
+    public void RenderChaos() {
+    }
 }

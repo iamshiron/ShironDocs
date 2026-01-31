@@ -4,28 +4,11 @@ using System.Text.Json.Serialization;
 
 namespace Shiron.Docs.Engine.Model;
 
-public enum TokenType {
-    Container,
-    Text,
-    See,
-    List,
-    Remarks,
-    Empty,
-    Code,
-    Paragraph,
-    KVP
-}
-
-[JsonConverter(typeof(TokenTypeConverter))]
-public class TokenTypeConverter : JsonConverter<TokenType> {
-    public override TokenType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-        throw new Exception("No need for deserialization of TokenType");
-    }
-
-    public override void Write(Utf8JsonWriter writer, TokenType value, JsonSerializerOptions options) {
-        writer.WriteStringValue(value.ToString());
-    }
-
+public enum StyleType {
+    Bold,
+    Italic,
+    Underline,
+    Strikethrough
 }
 
 [JsonDerivedType(typeof(ContainerToken), "container")]
@@ -35,60 +18,45 @@ public class TokenTypeConverter : JsonConverter<TokenType> {
 [JsonDerivedType(typeof(SeeToken), "see")]
 [JsonDerivedType(typeof(ListToken), "list")]
 [JsonDerivedType(typeof(RemarksToken), "remarks")]
-[JsonDerivedType(typeof(EmptyToken), "empty")]
 [JsonDerivedType(typeof(KVPListItem), "kvp")]
+[JsonDerivedType(typeof(StyleToken), "style")]
 public interface IDocumentationToken {
-    TokenType TokenType { get; }
 }
 
 public record KVPListItem(
     string Key,
     IDocumentationToken[] Value
-) : IDocumentationToken {
-    public TokenType TokenType => TokenType.KVP;
-}
-
-public record EmptyToken() : IDocumentationToken {
-    public TokenType TokenType => TokenType.Empty;
-}
+) : IDocumentationToken;
 
 public record ContainerToken(
     IDocumentationToken[] Items
-) : IDocumentationToken {
-    public TokenType TokenType => TokenType.Container;
-}
+) : IDocumentationToken;
 
 public record ParagraphToken(
     IDocumentationToken[] Items
-) : IDocumentationToken {
-    public TokenType TokenType => TokenType.Paragraph;
-}
+) : IDocumentationToken;
 
 public record CodeToken(
-    string CodeText
+    string Code
 ) : IDocumentationToken {
-    public TokenType TokenType => TokenType.Code;
     public bool? Inline { get; init; } = null;
 }
 
 public record TextToken(
     string Text
 ) : IDocumentationToken {
-    public TokenType TokenType => TokenType.Text;
-
-    public bool? Bold { get; init; } = null;
-    public bool? Italic { get; init; } = null;
-    public bool? Underline { get; init; } = null;
-    public bool? Strikethrough { get; init; } = null;
 }
+
+public record StyleToken(
+    IDocumentationToken[] Items,
+    StyleType StyleType
+) : IDocumentationToken;
 
 public record SeeToken(
     bool IsExternal,
     string ReferenceID,
     string DisplayText
-) : IDocumentationToken {
-    public TokenType TokenType => TokenType.See;
-}
+) : IDocumentationToken;
 
 public enum ListType {
     Bullet,
@@ -97,13 +65,9 @@ public enum ListType {
 
 public record ListToken(
     ListType Type,
-    IDocumentationToken[] Items
-) : IDocumentationToken {
-    public TokenType TokenType => TokenType.List;
-}
+    IDocumentationToken[][] Items
+) : IDocumentationToken;
 
 public record RemarksToken(
     IDocumentationToken[] Content
-) : IDocumentationToken {
-    public TokenType TokenType => TokenType.Remarks;
-}
+) : IDocumentationToken;

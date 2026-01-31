@@ -45,7 +45,6 @@ var jsonSerializerOptions = new JsonSerializerOptions {
     WriteIndented = true,
     IndentSize = 4
 };
-jsonSerializerOptions.Converters.Add(new TokenTypeConverter());
 
 #pragma warning disable CS8321 // Local function is declared but never used
 async Task RunDemoProject() {

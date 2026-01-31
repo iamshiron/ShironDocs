@@ -74,6 +74,10 @@ public class CSharpExtractor {
     }
 
     public string GetDocID(ISymbol symbol) {
+        if (symbol.Kind == SymbolKind.TypeParameter) {
+            return symbol.Name;
+        }
+
         if (_docIDCache.TryGetValue(symbol, out var docID)) {
             return docID;
         }
@@ -211,8 +215,8 @@ public class CSharpExtractor {
         var symbol = new TypeSymbol(
             Name: typeSymbol.Name,
             ChildIDs: [],
-            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Types[id] = symbol;
 
@@ -247,8 +251,8 @@ public class CSharpExtractor {
             ReturnTypeID: GetDocID(methodSymbol.ReturnType),
             ReturnTypeName: GetDisplayName(methodSymbol.ReturnType),
             Parameters: parameters,
-            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Methods[id] = symbol;
         return true;
@@ -260,8 +264,8 @@ public class CSharpExtractor {
             Name: propertySymbol.Name,
             TypeID: GetDocID(propertySymbol.Type),
             TypeName: GetDisplayName(propertySymbol.Type),
-            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Properties[id] = symbol;
         return true;
@@ -278,8 +282,8 @@ public class CSharpExtractor {
             Name: fieldSymbol.Name,
             TypeID: GetDocID(fieldSymbol.Type),
             TypeName: GetDisplayName(fieldSymbol.Type),
-            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Fields[id] = symbol;
         return true;
@@ -296,19 +300,24 @@ public class CSharpExtractor {
             if (member.Kind == SymbolKind.Field && member is IFieldSymbol fs && fs.ConstantValue != null) {
                 var docID = GetDocID(fs);
 
+                var summary = XMLDocExtractor.GetNull(XElement.Parse($"<root>{fs.GetDocumentationCommentXml()}</root>").Descendants("summary").FirstOrDefault());
+                var remarks = XMLDocExtractor.GetNull(XElement.Parse($"<root>{fs.GetDocumentationCommentXml()}</root>").Descendants("remarks").FirstOrDefault());
+
                 options.Add(new EnumItem(
                     Name: fs.Name,
                     Value: fs.ConstantValue!.ToString()!,
                     ID: docID,
-                    Summary: null,
-                    Remarks: null
+                    Summary: summary,
+                    Remarks: remarks
                 ));
+
+                var fieldDoc = XElement.Parse($"<root>{fs.GetDocumentationCommentXml()}</root>");
                 context.Fields[docID] = new FieldSymbol(
                     Name: fs.Name,
                     TypeID: GetDocID(fs.Type),
                     TypeName: GetDisplayName(fs.Type),
-                    Summary: null,
-                    Remarks: null
+                    Summary: summary,
+                    Remarks: remarks
                 );
             }
         }
@@ -319,8 +328,8 @@ public class CSharpExtractor {
             UnderlyingTypeID: GetDocID(enumSymbol.EnumUnderlyingType),
             UnderlyingTypeName: GetDisplayName(enumSymbol.EnumUnderlyingType),
             Options: [.. options],
-            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
 
         context.Types[id] = symbol;

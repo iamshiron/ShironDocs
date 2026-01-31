@@ -8,12 +8,34 @@ namespace Shiron.Docs.Engine.Extractor;
 public static class XMLDocExtractor {
     public static Dictionary<string, List<string>> MissedTokens = [];
 
-    public static IDocumentationToken Get(XNode? node) {
-        return PackTokens(ParseNode(node));
+    /// <summary>
+    /// Get documentation tokens from an XML node.
+    /// </summary>
+    /// <param name="node">The XML node to extract documentation tokens from.</param>
+    /// <returns>An array of documentation tokens extracted from the XML node, or null if the node is null.</returns>
+    public static IDocumentationToken[]? GetNull(XNode? node) {
+        if (node == null) {
+            return null;
+        }
+
+        return ParseNode(node);
     }
 
-    public static Dictionary<string, IDocumentationToken?> GetParam(IEnumerable<XElement> node) {
-        var res = new Dictionary<string, IDocumentationToken?>();
+    /// <summary>
+    /// Get documentation tokens from an XML node.
+    /// </summary>
+    /// <param name="node">The XML node to extract documentation tokens from.</param>
+    /// <returns>An array of documentation tokens extracted from the XML node.</returns>
+    public static IDocumentationToken[] Get(XNode? node) {
+        if (node == null) {
+            return [];
+        }
+
+        return ParseNode(node);
+    }
+
+    public static Dictionary<string, IDocumentationToken[]> GetParam(IEnumerable<XElement> node) {
+        var res = new Dictionary<string, IDocumentationToken[]>();
 
         foreach (var param in node) {
             var nameAttr = param.Attribute("name");
@@ -21,7 +43,7 @@ public static class XMLDocExtractor {
                 continue;
             }
 
-            res[nameAttr.Value] = PackTokens(ParseNode(param));
+            res[nameAttr.Value] = ParseNode(param);
         }
         return res;
     }
@@ -36,7 +58,7 @@ public static class XMLDocExtractor {
         }
 
         if (node is not XElement element) {
-            return [new EmptyToken()];
+            return [];
         }
 
         var tokens = Parse(element);
@@ -84,10 +106,29 @@ public static class XMLDocExtractor {
                         case "para":
                             tokens.Add(new ParagraphToken(ParseNode(el)));
                             break;
-                        case "strong":
-                            tokens.Add(new TextToken(el.Value.Trim()) {
-                                Bold = true
-                            });
+                        case "strong" or "b" or "bold":
+                            tokens.Add(new StyleToken(
+                                ParseNode(el),
+                                StyleType.Bold
+                            ));
+                            break;
+                        case "em" or "i" or "italic":
+                            tokens.Add(new StyleToken(
+                                ParseNode(el),
+                                StyleType.Italic
+                            ));
+                            break;
+                        case "underline" or "u":
+                            tokens.Add(new StyleToken(
+                                ParseNode(el),
+                                StyleType.Underline
+                            ));
+                            break;
+                        case "strikethrough" or "s":
+                            tokens.Add(new StyleToken(
+                                ParseNode(el),
+                                StyleType.Strikethrough
+                            ));
                             break;
                         case "c":
                             tokens.Add(new CodeToken(el.Value.Trim()) {
@@ -173,19 +214,23 @@ public static class XMLDocExtractor {
 
 
     public static ListToken ParseList(XElement e) {
-        var items = new List<IDocumentationToken>();
+        var items = new List<IDocumentationToken[]>();
         foreach (var n in e.Nodes()) {
             if (n is XElement element) {
                 items.Add(ParseListItem(element));
                 continue;
             }
 
-            items.Add(Get(n));
+
+            var token = Get(n);
+            if (token != null) {
+                items.Add(token);
+            }
         }
         return new ListToken(ListType.Bullet, [.. items]);
     }
 
-    public static IDocumentationToken ParseListItem(XElement e) {
+    public static IDocumentationToken[] ParseListItem(XElement e) {
         var name = e.Name.LocalName;
         if (name == "item") {
             var termElement = e.Element("term");
@@ -194,9 +239,9 @@ public static class XMLDocExtractor {
             if (termElement != null && descriptionElement != null) {
                 var key = termElement.Value.Trim();
                 var value = ParseNode(descriptionElement);
-                return new KVPListItem(key, [.. value]);
+                return [new KVPListItem(key, [.. value])];
             } else {
-                return PackTokens(ParseNode(e));
+                return ParseNode(e);
             }
         } else {
             return Get(e);

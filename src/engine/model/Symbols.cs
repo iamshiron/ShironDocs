@@ -13,15 +13,15 @@ public record ParameterItem(
     string Name,
     string TypeID,
     string TypeName,
-    IDocumentationToken? Documentation
+    IDocumentationToken[]? Documentation
 );
 
 public record EnumItem(
     string Name,
     string Value,
     string ID,
-    IDocumentationToken? Summary,
-    IDocumentationToken? Remarks
+    IDocumentationToken[]? Summary,
+    IDocumentationToken[]? Remarks
 );
 
 public record NamespaceSymbol(
@@ -35,8 +35,8 @@ public record NamespaceSymbol(
 public record TypeSymbol(
     string Name,
     ConcurrentBag<string> ChildIDs,
-    IDocumentationToken? Summary,
-    IDocumentationToken? Remarks
+    IDocumentationToken[]? Summary,
+    IDocumentationToken[]? Remarks
 ) : ISymbolContainer;
 
 public record EnumSymbol(
@@ -44,31 +44,31 @@ public record EnumSymbol(
     string UnderlyingTypeID,
     string UnderlyingTypeName,
     EnumItem[] Options,
-    IDocumentationToken? Summary,
-    IDocumentationToken? Remarks
+    IDocumentationToken[]? Summary,
+    IDocumentationToken[]? Remarks
 ) : TypeSymbol(Name, [], Summary, Remarks);
 
 public record PropertySymbol(
     string Name,
     string TypeID,
     string TypeName,
-    IDocumentationToken? Summary,
-    IDocumentationToken? Remarks
+    IDocumentationToken[]? Summary,
+    IDocumentationToken[]? Remarks
 );
 public record FieldSymbol(
     string Name,
     string TypeID,
     string TypeName,
-    IDocumentationToken? Summary,
-    IDocumentationToken? Remarks
+    IDocumentationToken[]? Summary,
+    IDocumentationToken[]? Remarks
 );
 public record MethodSymbol(
     string Name,
     string ReturnTypeID,
     string ReturnTypeName,
     ParameterItem[] Parameters,
-    IDocumentationToken? Summary,
-    IDocumentationToken? Remarks
+    IDocumentationToken[]? Summary,
+    IDocumentationToken[]? Remarks
 );
 public record ErrorSymbol(
 );
