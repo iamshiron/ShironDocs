@@ -84,7 +84,8 @@ public record TextToken(
 
 public record SeeToken(
     bool IsExternal,
-    string ReferenceID
+    string ReferenceID,
+    string DisplayText
 ) : IDocumentationToken {
     public TokenType TokenType => TokenType.See;
 }

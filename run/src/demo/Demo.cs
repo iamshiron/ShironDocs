@@ -2,6 +2,8 @@
 
 /// <summary>
 /// A class that attempts to orchestrate order in a chaotic universe, much like a cat trying to herd humans.
+/// It was created by <see cref="https://github.com/iamshiron"/> on a quest to bring structured documentation to the wild west of codebases.
+/// Here is another link using href syntax: <see href="https://github.com/iamshiron">Shiron's GitHub</see>.
 /// </summary>
 /// <remarks>
 /// <para>

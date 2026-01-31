@@ -36,6 +36,19 @@ public static class XMLDocExtractor {
         return new ContainerToken([.. tokens]);
     }
 
+    private static string GetShortLabelForRef(string cref) {
+        if (cref.Length > 2 && cref[1] == ':') {
+            cref = cref[2..];
+        }
+
+        var parenIndex = cref.IndexOf('(');
+        if (parenIndex > 0) {
+            cref = cref[..parenIndex];
+        }
+
+        return cref.Split('.').Last();
+    }
+
     public static IDocumentationToken[] Parse(XNode element) {
         if (element is XText n) {
             return [new TextToken(n.Value.Trim())];
@@ -75,6 +88,58 @@ public static class XMLDocExtractor {
                         case "description":
                             tokens.Add(PackTokens(ParseNode(el)));
                             break;
+                        case "see":
+                            var cref = el.Attribute("cref")?.Value;
+                            var href = el.Attribute("href")?.Value;
+
+                            if (cref == null && href == null) {
+                                tokens.Add(new CodeToken(el.Value.Trim()) {
+                                    Inline = true
+                                });
+                                break;
+                            }
+
+                            // Primarily handle cref references
+                            if (cref != null) {
+                                if (cref.StartsWith("!:")) {
+                                    var uri = Uri.TryCreate(cref[2..], UriKind.Absolute, out var result) ? result : null;
+                                    if (uri != null) {
+                                        tokens.Add(new SeeToken(true, uri.ToString(), uri.ToString()) {
+                                            IsExternal = true
+                                        });
+                                    } else {
+                                        tokens.Add(new CodeToken(GetShortLabelForRef(cref)) {
+                                            Inline = true
+                                        });
+                                    }
+
+                                    break;
+                                }
+
+                                // We know it's an internal reference
+                                tokens.Add(new SeeToken(false, cref, GetShortLabelForRef(cref)) {
+                                    IsExternal = false
+                                });
+
+                                break;
+                            }
+
+                            if (href != null) {
+                                var uri = Uri.TryCreate(href, UriKind.Absolute, out var result) ? result : null;
+                                if (uri == null) {
+                                    tokens.Add(new CodeToken(el.Value.Trim()) {
+                                        Inline = true
+                                    });
+                                } else {
+                                    tokens.Add(new SeeToken(true, uri.ToString(), uri.ToString()) {
+                                        IsExternal = true
+                                    });
+                                }
+                                break;
+                            }
+
+                            break;
+
                         default:
                             if (MissedTokens.ContainsKey(el.Name.LocalName)) {
                                 MissedTokens[el.Name.LocalName].Add(el.ToString());
