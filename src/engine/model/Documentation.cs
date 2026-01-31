@@ -10,7 +10,10 @@ public enum TokenType {
     See,
     List,
     Remarks,
-    Empty
+    Empty,
+    Code,
+    Paragraph,
+    KVP
 }
 
 [JsonConverter(typeof(TokenTypeConverter))]
@@ -26,13 +29,23 @@ public class TokenTypeConverter : JsonConverter<TokenType> {
 }
 
 [JsonDerivedType(typeof(ContainerToken), "container")]
+[JsonDerivedType(typeof(ParagraphToken), "paragraph")]
+[JsonDerivedType(typeof(CodeToken), "code")]
 [JsonDerivedType(typeof(TextToken), "text")]
 [JsonDerivedType(typeof(SeeToken), "see")]
 [JsonDerivedType(typeof(ListToken), "list")]
 [JsonDerivedType(typeof(RemarksToken), "remarks")]
 [JsonDerivedType(typeof(EmptyToken), "empty")]
+[JsonDerivedType(typeof(KVPListItem), "kvp")]
 public interface IDocumentationToken {
     TokenType TokenType { get; }
+}
+
+public record KVPListItem(
+    string Key,
+    IDocumentationToken[] Value
+) : IDocumentationToken {
+    public TokenType TokenType => TokenType.KVP;
 }
 
 public record EmptyToken() : IDocumentationToken {
@@ -45,10 +58,28 @@ public record ContainerToken(
     public TokenType TokenType => TokenType.Container;
 }
 
+public record ParagraphToken(
+    IDocumentationToken[] Items
+) : IDocumentationToken {
+    public TokenType TokenType => TokenType.Paragraph;
+}
+
+public record CodeToken(
+    string CodeText
+) : IDocumentationToken {
+    public TokenType TokenType => TokenType.Code;
+    public bool? Inline { get; init; } = null;
+}
+
 public record TextToken(
     string Text
 ) : IDocumentationToken {
     public TokenType TokenType => TokenType.Text;
+
+    public bool? Bold { get; init; } = null;
+    public bool? Italic { get; init; } = null;
+    public bool? Underline { get; init; } = null;
+    public bool? Strikethrough { get; init; } = null;
 }
 
 public record SeeToken(

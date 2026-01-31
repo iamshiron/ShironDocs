@@ -207,11 +207,12 @@ public class CSharpExtractor {
             return ExtractEnum(id, (INamedTypeSymbol) typeSymbol, context);
         }
 
+        var xmlDoc = XElement.Parse($"<root>{typeSymbol.GetDocumentationCommentXml()}</root>");
         var symbol = new TypeSymbol(
             Name: typeSymbol.Name,
             ChildIDs: [],
-            Summary: null,
-            Remarks: null
+            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Types[id] = symbol;
 
@@ -239,25 +240,27 @@ public class CSharpExtractor {
             );
         }
 
+        var xmlDoc = XElement.Parse($"<root>{methodSymbol.GetDocumentationCommentXml()}</root>");
         var symbol = new MethodSymbol(
             Name: methodSymbol.Name,
             ReturnTypeID: GetDocID(methodSymbol.ReturnType),
             ReturnTypeName: GetDisplayName(methodSymbol.ReturnType),
             Parameters: parameters,
-            Summary: null,
-            Remarks: null
+            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Methods[id] = symbol;
         return true;
     }
 
     public bool ExtractProperty(string id, IPropertySymbol propertySymbol, AssemblyData context) {
+        var xmlDoc = XElement.Parse($"<root>{propertySymbol.GetDocumentationCommentXml()}</root>");
         var symbol = new PropertySymbol(
             Name: propertySymbol.Name,
             TypeID: GetDocID(propertySymbol.Type),
             TypeName: GetDisplayName(propertySymbol.Type),
-            Summary: null,
-            Remarks: null
+            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Properties[id] = symbol;
         return true;
@@ -269,12 +272,13 @@ public class CSharpExtractor {
             return false;
         }
 
+        var xmlDoc = XElement.Parse($"<root>{fieldSymbol.GetDocumentationCommentXml()}</root>");
         var symbol = new FieldSymbol(
             Name: fieldSymbol.Name,
             TypeID: GetDocID(fieldSymbol.Type),
             TypeName: GetDisplayName(fieldSymbol.Type),
-            Summary: null,
-            Remarks: null
+            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
         context.Fields[id] = symbol;
         return true;
@@ -284,11 +288,6 @@ public class CSharpExtractor {
         if (enumSymbol.EnumUnderlyingType == null) {
             throw new Exception($"Enum underlying type is null. Is {enumSymbol.Name} really an enum?");
         }
-
-        List<IDocumentationToken> tokens = [];
-
-        var root = XElement.Parse($"<root>{enumSymbol.GetDocumentationCommentXml()}</root>");
-        var summaryTokens = XMLDocExtractor.Get(root.Descendants("summary").FirstOrDefault());
 
         var members = enumSymbol.GetMembers();
         var options = new List<EnumItem>(members.Length);
@@ -313,13 +312,14 @@ public class CSharpExtractor {
             }
         }
 
+        var xmlDoc = XElement.Parse($"<root>{enumSymbol.GetDocumentationCommentXml()}</root>");
         var symbol = new EnumSymbol(
             Name: enumSymbol.Name,
             UnderlyingTypeID: GetDocID(enumSymbol.EnumUnderlyingType),
             UnderlyingTypeName: GetDisplayName(enumSymbol.EnumUnderlyingType),
             Options: [.. options],
-            Summary: summaryTokens,
-            Remarks: null
+            Summary: XMLDocExtractor.Get(xmlDoc.Descendants("summary").FirstOrDefault()),
+            Remarks: XMLDocExtractor.Get(xmlDoc.Descendants("remarks").FirstOrDefault())
         );
 
         context.Types[id] = symbol;

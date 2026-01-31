@@ -105,3 +105,10 @@ async Task RunStandardLibrary() {
 CSharpExtractor.Init();
 await RunDemoProject();
 // await RunStandardLibrary();
+
+foreach (var kvp in XMLDocExtractor.MissedTokens) {
+    Console.WriteLine($"Missed Token: {kvp.Key}");
+    foreach (var instance in kvp.Value) {
+        Console.WriteLine(instance);
+    }
+}
