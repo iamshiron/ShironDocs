@@ -102,5 +102,5 @@ async Task RunStandardLibrary() {
 #pragma warning restore CS8321 // Local function is declared but never used
 
 CSharpExtractor.Init();
-await RunDemoProject();
-//await RunStandardLibrary();
+//await RunDemoProject();
+await RunStandardLibrary();
