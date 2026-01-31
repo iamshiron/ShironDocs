@@ -184,6 +184,20 @@ public class DemoClass {
     public void NewMethod() {
         Console.WriteLine("This is the new and improved method.");
     }
+
+    /// <summary>
+    /// <code>
+    /// // This method is a placeholder for future chaos.
+    /// for (int i = 0; i &lt; 10; i++) {
+    ///     Console.WriteLine(i);
+    /// }
+    /// </code>
+    /// </summary>
+    /// <remarks>
+    /// This method is intentionally left blank, like a zen koan waiting to be solved.
+    /// </remarks>
+    public void RenderedCode() {
+    }
 }
 
 /// <summary>

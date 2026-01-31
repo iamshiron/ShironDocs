@@ -9,8 +9,41 @@ namespace Shiron.Docs.Engine.Extractor;
 public static class XMLDocExtractor {
     public static Dictionary<string, List<string>> MissedTokens = [];
 
+    private static string CleanString(string str) {
+        return Regex.Replace(str, @"\s+", " ");
+    }
+
     private static TextToken CreateTextToken(string text) {
-        return new TextToken(Regex.Replace(text, @"\s+", " "));
+        return new TextToken(CleanString(text));
+    }
+
+    private static CodeToken CreateCodeToken(string rawCode, bool inline) {
+        if (inline) {
+            return new CodeToken(CleanString(rawCode)) {
+                Inline = true
+            };
+        }
+
+        var lines = rawCode.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+
+        if (lines.Length == 0) return new CodeToken(string.Empty) {
+            Inline = false
+        };
+
+        var nonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+        if (nonEmptyLines.Count == 0) return new CodeToken(string.Empty) {
+            Inline = false
+        };
+
+        var minIndent = nonEmptyLines.Min(l => l.Length - l.TrimStart().Length);
+
+        var cleanedLines = lines.Select(l => {
+            return l.Length >= minIndent ? l[minIndent..] : l.Trim();
+        });
+
+        return new CodeToken(string.Join("\n", cleanedLines)) {
+            Inline = false
+        };
     }
 
     /// <summary>
@@ -136,14 +169,10 @@ public static class XMLDocExtractor {
                             ));
                             break;
                         case "c":
-                            tokens.Add(new CodeToken(el.Value.Trim()) {
-                                Inline = true
-                            });
+                            tokens.Add(CreateCodeToken(el.Value, true));
                             break;
                         case "code":
-                            tokens.Add(new CodeToken(el.Value.Trim()) {
-                                Inline = false
-                            });
+                            tokens.Add(CreateCodeToken(el.Value, false));
                             break;
                         case "description":
                             tokens.Add(PackTokens(ParseNode(el)));
@@ -153,9 +182,7 @@ public static class XMLDocExtractor {
                             var href = el.Attribute("href")?.Value;
 
                             if (cref == null && href == null) {
-                                tokens.Add(new CodeToken(el.Value.Trim()) {
-                                    Inline = true
-                                });
+                                tokens.Add(CreateCodeToken(el.Value, true));
                                 break;
                             }
 
@@ -168,9 +195,7 @@ public static class XMLDocExtractor {
                                             IsExternal = true
                                         });
                                     } else {
-                                        tokens.Add(new CodeToken(GetShortLabelForRef(cref)) {
-                                            Inline = true
-                                        });
+                                        tokens.Add(CreateCodeToken(GetShortLabelForRef(cref), true));
                                     }
 
                                     break;
@@ -187,9 +212,7 @@ public static class XMLDocExtractor {
                             if (href != null) {
                                 var uri = Uri.TryCreate(href, UriKind.Absolute, out var result) ? result : null;
                                 if (uri == null) {
-                                    tokens.Add(new CodeToken(el.Value.Trim()) {
-                                        Inline = true
-                                    });
+                                    tokens.Add(CreateCodeToken(href, true));
                                 } else {
                                     tokens.Add(new SeeToken(true, uri.ToString(), uri.ToString()) {
                                         IsExternal = true
