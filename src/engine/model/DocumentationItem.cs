@@ -29,6 +29,9 @@ public record PropertySymbol(
     string TypeName
 );
 public record FieldSymbol(
+    string Name,
+    string TypeID,
+    string TypeName
 );
 public record EnumSymbol(
 );

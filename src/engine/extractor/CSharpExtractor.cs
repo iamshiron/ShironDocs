@@ -144,6 +144,10 @@ public class CSharpExtractor {
                 addChild = ExtractProperty(id, s, context);
                 break;
 
+            case IFieldSymbol s:
+                addChild = ExtractField(id, s, context);
+                break;
+
             default:
                 break;
         }
@@ -200,6 +204,21 @@ public class CSharpExtractor {
             TypeName: GetDisplayName(propertySymbol.Type)
         );
         context.Properties[id] = symbol;
+        return true;
+    }
+
+    public bool ExtractField(string id, IFieldSymbol fieldSymbol, AssemblyData context) {
+        // Skip compiler-generated backing fields
+        if (fieldSymbol.IsImplicitlyDeclared) {
+            return false;
+        }
+
+        var symbol = new FieldSymbol(
+            Name: fieldSymbol.Name,
+            TypeID: GetDocID(fieldSymbol.Type),
+            TypeName: GetDisplayName(fieldSymbol.Type)
+        );
+        context.Fields[id] = symbol;
         return true;
     }
 }
