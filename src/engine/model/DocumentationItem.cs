@@ -1,4 +1,6 @@
 
+using System.Collections.Concurrent;
+
 namespace Shiron.Docs.Engine.Model;
 
 public record ParameterItem(
@@ -6,14 +8,18 @@ public record ParameterItem(
     string TypeID
 );
 
+public interface ISymbolContainer {
+    ConcurrentBag<string> ChildIDs { get; }
+}
+
 public record NamespaceSymbol(
 );
 public record TypeSymbol(
-    string Name,
-    List<string> MethodIDs,
-    List<string> PropertyIDs,
-    List<string> FieldIDs
-);
+    string Name
+) : ISymbolContainer {
+    public ConcurrentBag<string> ChildIDs { get; } = [];
+}
+
 public record MemberSymbol(
 );
 public record PropertySymbol(
@@ -34,11 +40,11 @@ public record AssemblyData(
     string Name,
     string Version,
     string CSProjFile,
-    Dictionary<string, NamespaceSymbol> Namespaces,
-    Dictionary<string, TypeSymbol> Types,
-    Dictionary<string, MethodSymbol> Methods,
-    Dictionary<string, PropertySymbol> Properties,
-    Dictionary<string, FieldSymbol> Fields,
-    Dictionary<string, EnumSymbol> Enums,
-    Dictionary<string, ErrorSymbol> Errors
+    IDictionary<string, NamespaceSymbol> Namespaces,
+    IDictionary<string, TypeSymbol> Types,
+    IDictionary<string, MethodSymbol> Methods,
+    IDictionary<string, PropertySymbol> Properties,
+    IDictionary<string, FieldSymbol> Fields,
+    IDictionary<string, EnumSymbol> Enums,
+    IDictionary<string, ErrorSymbol> Errors
 );

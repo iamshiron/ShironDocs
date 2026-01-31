@@ -1,4 +1,5 @@
 
+using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
@@ -105,45 +106,45 @@ public class CSharpExtractor {
             Name: assembly.Name,
             Version: assembly.Identity.Version.ToString(),
             CSProjFile: PathRelativeTo(project.FilePath!),
-            [], [], [], [], [], [], [] // Initialize dictionaries as empty
+            Namespaces: new ConcurrentDictionary<string, NamespaceSymbol>(),
+            Types: new ConcurrentDictionary<string, TypeSymbol>(),
+            Methods: new ConcurrentDictionary<string, MethodSymbol>(),
+            Properties: new ConcurrentDictionary<string, PropertySymbol>(),
+            Fields: new ConcurrentDictionary<string, FieldSymbol>(),
+            Enums: new ConcurrentDictionary<string, EnumSymbol>(),
+            Errors: new ConcurrentDictionary<string, ErrorSymbol>()
         );
 
         var types = GetNamedTypes(assembly, assembly.GlobalNamespace);
         foreach (var type in types) {
-            var id = GetDocID(type);
-            Console.WriteLine($"Processing type: {id}");
-
-            switch (type) {
-                case ITypeSymbol typeSymbol:
-                    assemblyData.Types[id] = await ExtractTypeSymbolAsync(typeSymbol);
-                    break;
-            }
+            await ExtractSymbolAsync(type, assemblyData);
         }
 
         return assemblyData;
     }
 
-    public async Task<TypeSymbol> ExtractTypeSymbolAsync(ITypeSymbol typeSymbol) {
-        var res = new TypeSymbol(
-            Name: typeSymbol.Name,
-            [], [], []
+    public async Task ExtractSymbolAsync(ISymbol typeSymbol, AssemblyData context, ISymbolContainer? parent = null) {
+        var id = GetDocID(typeSymbol);
+
+        switch (typeSymbol) {
+            case ITypeSymbol s:
+                await ExtractTypeAsync(id, s, context);
+                parent?.ChildIDs.Add(id);
+
+                break;
+            default:
+                break;
+        }
+    }
+
+    public async Task ExtractTypeAsync(string id, ITypeSymbol typeSymbol, AssemblyData context) {
+        var type = new TypeSymbol(
+            Name: typeSymbol.Name
         );
+        context.Types[id] = type;
 
         foreach (var member in typeSymbol.GetMembers()) {
-            var memberID = GetDocID(member);
-            switch (member) {
-                case IMethodSymbol:
-                    res.MethodIDs.Add(memberID);
-                    break;
-                case IPropertySymbol:
-                    res.PropertyIDs.Add(memberID);
-                    break;
-                case IFieldSymbol:
-                    res.FieldIDs.Add(memberID);
-                    break;
-            }
+            await ExtractSymbolAsync(member, context, type);
         }
-
-        return res;
     }
 }
