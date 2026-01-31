@@ -1,4 +1,5 @@
 
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using Shiron.Docs.Engine.Model;
@@ -7,6 +8,10 @@ namespace Shiron.Docs.Engine.Extractor;
 
 public static class XMLDocExtractor {
     public static Dictionary<string, List<string>> MissedTokens = [];
+
+    private static TextToken CreateTextToken(string text) {
+        return new TextToken(Regex.Replace(text, @"\s+", " "));
+    }
 
     /// <summary>
     /// Get documentation tokens from an XML node.
@@ -50,11 +55,11 @@ public static class XMLDocExtractor {
 
     public static IDocumentationToken[] ParseNode(XNode? node) {
         if (node == null) {
-            return [new TextToken("")];
+            return [new TextToken(string.Empty)];
         }
 
         if (node is XText t) {
-            return [new TextToken(t.Value.Trim())];
+            return [CreateTextToken(t.Value.Trim())];
         }
 
         if (node is not XElement element) {
@@ -87,14 +92,14 @@ public static class XMLDocExtractor {
 
     public static IDocumentationToken[] Parse(XNode element) {
         if (element is XText n) {
-            return [new TextToken(n.Value.Trim())];
+            return [CreateTextToken(n.Value.Trim())];
         }
 
         var tokens = new List<IDocumentationToken>();
         if (element is XElement e) {
             foreach (var node in e.Nodes()) {
                 if (node is XText text) {
-                    tokens.Add(new TextToken(text.Value.Trim()));
+                    tokens.Add(CreateTextToken(text.Value.Trim()));
                     continue;
                 }
 

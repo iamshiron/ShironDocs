@@ -44,8 +44,7 @@ public record CodeToken(
 
 public record TextToken(
     string Text
-) : IDocumentationToken {
-}
+) : IDocumentationToken;
 
 public record StyleToken(
     IDocumentationToken[] Items,
