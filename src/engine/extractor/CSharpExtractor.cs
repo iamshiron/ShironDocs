@@ -119,16 +119,53 @@ public class CSharpExtractor {
         );
 
         var types = GetNamedTypes(assembly, assembly.GlobalNamespace);
+
+        BuildNamespaceTree(types, assemblyData);
         foreach (var type in types) {
-            await ExtractSymbolAsync(type, assemblyData);
+            var docID = GetDocID(type);
+            await ExtractSymbolAsync(docID, type, assemblyData);
         }
 
         return assemblyData;
     }
 
-    public async Task ExtractSymbolAsync(ISymbol typeSymbol, AssemblyData context, ISymbolContainer? parent = null) {
-        var id = GetDocID(typeSymbol);
+    private string GetNamespaceID(INamespaceSymbol symbol) => $"N:{symbol.ToDisplayString()}";
 
+    private void BuildNamespaceTree(IEnumerable<ITypeSymbol> types, AssemblyData context) {
+        // 1. Get unique namespaces only (Performance Win)
+        // SymbolEqualityComparer is crucial for Roslyn keys
+        var uniqueNamespaces = types
+            .Select(t => t.ContainingNamespace)
+            .Where(n => n != null && !n.IsGlobalNamespace)
+            .Distinct(SymbolEqualityComparer.Default)
+            .Cast<INamespaceSymbol>();
+
+        // 2. Build the skeleton for these few namespaces
+        foreach (var ns in uniqueNamespaces) {
+            EnsureNamespaceRecursive(ns, context);
+        }
+    }
+
+    private void EnsureNamespaceRecursive(INamespaceSymbol ns, AssemblyData context) {
+        var id = GetDocID(ns);
+        if (context.Namespaces.ContainsKey(id)) return;
+        var nsSymbol = new NamespaceSymbol(
+            Name: ns.Name
+        );
+
+        if (context.Namespaces.TryAdd(id, nsSymbol)) {
+            if (ns.ContainingNamespace != null && !ns.ContainingNamespace.IsGlobalNamespace) {
+                var parentId = GetDocID(ns.ContainingNamespace);
+                EnsureNamespaceRecursive(ns.ContainingNamespace, context);
+
+                if (context.Namespaces.TryGetValue(parentId, out var parentNs)) {
+                    parentNs.ChildIDs.Add(id);
+                }
+            }
+        }
+    }
+
+    public async Task ExtractSymbolAsync(string id, ISymbol typeSymbol, AssemblyData context, ISymbolContainer? parent = null) {
         var addChild = false;
         switch (typeSymbol) {
             case ITypeSymbol s:
@@ -155,9 +192,12 @@ public class CSharpExtractor {
             parent.ChildIDs.Add(id);
         }
     }
-
     public async Task<bool> ExtractTypeAsync(string id, ITypeSymbol typeSymbol, AssemblyData context) {
-        // Override for various type kinds
+        var namespaceDocID = GetDocID(typeSymbol.ContainingNamespace);
+        if (context.Namespaces.TryGetValue(namespaceDocID, out var nsSymbol)) {
+            nsSymbol.ChildIDs.Add(id);
+        }
+
         if (typeSymbol.TypeKind == TypeKind.Enum) {
             return ExtractEnum(id, (INamedTypeSymbol) typeSymbol, context);
         }
@@ -168,14 +208,13 @@ public class CSharpExtractor {
         context.Types[id] = symbol;
 
         foreach (var member in typeSymbol.GetMembers()) {
-            await ExtractSymbolAsync(member, context, symbol);
+            await ExtractSymbolAsync(GetDocID(member), member, context, symbol);
         }
 
         return true;
     }
 
     public bool ExtractMethod(string id, IMethodSymbol methodSymbol, AssemblyData context) {
-        // Only extract ordinary methods and constructors
         if (methodSymbol.MethodKind != MethodKind.Ordinary && methodSymbol.MethodKind != MethodKind.Constructor) {
             return false;
         }

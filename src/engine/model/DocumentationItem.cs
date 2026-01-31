@@ -1,6 +1,7 @@
 
 using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace Shiron.Docs.Engine.Model;
 
@@ -21,7 +22,10 @@ public interface ISymbolContainer {
 }
 
 public record NamespaceSymbol(
-);
+    string Name
+) : ISymbolContainer {
+    public ConcurrentBag<string> ChildIDs { get; } = [];
+}
 
 [JsonDerivedType(typeof(TypeSymbol), "base")]
 [JsonDerivedType(typeof(EnumSymbol), "enum")]
@@ -37,9 +41,6 @@ public record EnumSymbol(
     string UnderlyingTypeName,
     EnumItem[] Options
 ) : TypeSymbol(Name);
-
-public record MemberSymbol(
-);
 public record PropertySymbol(
     string Name,
     string TypeID,
