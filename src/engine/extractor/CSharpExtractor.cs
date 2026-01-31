@@ -107,11 +107,17 @@ public class CSharpExtractor {
     public async Task<AssemblyData> ExtractProjectAsync(Project project) {
         var compilation = await GetCompilationAsync(project);
         var assembly = compilation.Assembly;
+        var projectPath = PathRelativeTo(project.FilePath!);
 
+        var assemblyData = await ExtractAssemblySymbolAsync(assembly, projectPath);
+        return assemblyData;
+    }
+
+    public async Task<AssemblyData> ExtractAssemblySymbolAsync(IAssemblySymbol assembly, string displayPath) {
         var assemblyData = new AssemblyData(
             Name: assembly.Name,
             Version: assembly.Identity.Version.ToString(),
-            CSProjFile: PathRelativeTo(project.FilePath!),
+            CSProjFile: displayPath,
             Namespaces: new ConcurrentDictionary<string, NamespaceSymbol>(),
             Types: new ConcurrentDictionary<string, TypeSymbol>(),
             Methods: new ConcurrentDictionary<string, MethodSymbol>(),
@@ -120,13 +126,13 @@ public class CSharpExtractor {
             Errors: new ConcurrentDictionary<string, ErrorSymbol>()
         );
 
-        var types = GetNamedTypes(assembly, assembly.GlobalNamespace);
+        var allTypes = GetNamedTypes(assembly, assembly.GlobalNamespace).ToList();
+        BuildNamespaceTree(allTypes, assemblyData);
 
-        BuildNamespaceTree(types, assemblyData);
-        foreach (var type in types) {
-            var docID = GetDocID(type);
-            await ExtractSymbolAsync(docID, type, assemblyData);
-        }
+        await Parallel.ForEachAsync(allTypes, async (type, ct) => {
+            var id = GetDocID(type);
+            await ExtractSymbolAsync(id, type, assemblyData);
+        });
 
         return assemblyData;
     }
