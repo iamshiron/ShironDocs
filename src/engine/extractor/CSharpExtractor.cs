@@ -335,4 +335,9 @@ public class CSharpExtractor {
         context.Types[id] = symbol;
         return true;
     }
+
+    public void Reset() {
+        _compilationCache.Clear();
+        _docIDCache.Clear();
+    }
 }
