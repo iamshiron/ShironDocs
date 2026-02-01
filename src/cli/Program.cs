@@ -40,3 +40,15 @@ app.Configure(c => {
 });
 
 await app.RunAsync(args);
+
+CSharpExtractor.Init();
+var extractor = new CSharpExtractor();
+extractor.AddProject("src/demo/Shiron.DemoProject.csproj");
+
+var res = await extractor.ExtractAsync();
+var json = JsonSerializer.Serialize(res, new JsonSerializerOptions {
+    WriteIndented = true
+});
+
+File.WriteAllText("output.json", json);
+Console.WriteLine("Extraction complete. Output written to output.json.");

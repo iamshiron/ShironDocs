@@ -1,4 +1,5 @@
 
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -10,7 +11,35 @@ public static class XMLDocExtractor {
     public static Dictionary<string, List<string>> MissedTokens = [];
 
     private static string CleanString(string str) {
-        return Regex.Replace(str, @"\s+", " ");
+        if (string.IsNullOrWhiteSpace(str)) return string.Empty;
+
+        bool hasMultiSpace = false;
+        for (int i = 0; i < str.Length - 1; i++) {
+            if (char.IsWhiteSpace(str[i]) && char.IsWhiteSpace(str[i + 1])) {
+                hasMultiSpace = true;
+                break;
+            }
+        }
+        if (!hasMultiSpace && !str.Any(c => c == '\n' || c == '\r' || c == '\t')) {
+            return str.Trim();
+        }
+
+        var sb = new StringBuilder(str.Length);
+        bool lastWasSpace = false;
+
+        foreach (var c in str) {
+            if (char.IsWhiteSpace(c)) {
+                if (!lastWasSpace) {
+                    _ = sb.Append(' ');
+                    lastWasSpace = true;
+                }
+            } else {
+                _ = sb.Append(c);
+                lastWasSpace = false;
+            }
+        }
+
+        return sb.ToString().Trim();
     }
 
     private static TextToken CreateTextToken(string text) {
@@ -19,31 +48,47 @@ public static class XMLDocExtractor {
 
     private static CodeToken CreateCodeToken(string rawCode, bool inline) {
         if (inline) {
-            return new CodeToken(CleanString(rawCode)) {
-                Inline = true
-            };
+            return new CodeToken(CleanString(rawCode)) { Inline = true };
         }
 
-        var lines = rawCode.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+        if (string.IsNullOrWhiteSpace(rawCode)) {
+            return new CodeToken(string.Empty) { Inline = false };
+        }
 
-        if (lines.Length == 0) return new CodeToken(string.Empty) {
-            Inline = false
-        };
+        var minIndent = int.MaxValue;
+        var currentIndent = 0;
 
-        var nonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
-        if (nonEmptyLines.Count == 0) return new CodeToken(string.Empty) {
-            Inline = false
-        };
+        using (var reader = new StringReader(rawCode)) {
+            string? line;
+            while ((line = reader.ReadLine()) != null) {
+                if (string.IsNullOrWhiteSpace(line)) continue;
 
-        var minIndent = nonEmptyLines.Min(l => l.Length - l.TrimStart().Length);
+                currentIndent = 0;
+                foreach (char c in line) {
+                    if (!char.IsWhiteSpace(c)) break;
+                    currentIndent++;
+                }
+                if (currentIndent < minIndent) minIndent = currentIndent;
+            }
+        }
 
-        var cleanedLines = lines.Select(l => {
-            return l.Length >= minIndent ? l[minIndent..] : l.Trim();
-        });
+        if (minIndent == int.MaxValue) minIndent = 0;
 
-        return new CodeToken(string.Join("\n", cleanedLines)) {
-            Inline = false
-        };
+        var sb = new StringBuilder(rawCode.Length);
+        using (var reader = new StringReader(rawCode)) {
+            string? line;
+            bool first = true;
+            while ((line = reader.ReadLine()) != null) {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (!first) _ = sb.Append('\n');
+
+                _ = line.Length >= minIndent ? sb.Append(line.AsSpan(minIndent)) : sb.Append(line.Trim());
+
+                first = false;
+            }
+        }
+
+        return new CodeToken(sb.ToString()) { Inline = false };
     }
 
     /// <summary>

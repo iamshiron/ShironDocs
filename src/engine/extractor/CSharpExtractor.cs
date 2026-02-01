@@ -18,6 +18,11 @@ public class CSharpExtractor {
 
     private ConcurrentDictionary<string, Compilation> _compilationCache = [];
     private ConcurrentDictionary<ISymbol, string> _docIDCache = [];
+    private static readonly XmlReaderSettings _xmlReaderSettings = new XmlReaderSettings {
+        ConformanceLevel = ConformanceLevel.Fragment,
+        IgnoreComments = true,
+        IgnoreWhitespace = true
+    };
 
     public static void Init() {
         MSBuildLocator.RegisterDefaults();
@@ -201,6 +206,37 @@ public class CSharpExtractor {
             parent.ChildIDs.Add(id);
         }
     }
+
+    private (IDocumentationToken[]? summary, IDocumentationToken[]? remarks, Dictionary<string, IDocumentationToken[]?>? parameters) ParseXmlDocumentation(string? rawXml) {
+        IDocumentationToken[]? summaryDoc = null;
+        IDocumentationToken[]? remarksDoc = null;
+        Dictionary<string, IDocumentationToken[]?>? parametersDoc = null;
+
+        if (rawXml != null) {
+            using var reader = XmlReader.Create(new StringReader(rawXml), _xmlReaderSettings);
+            while (reader.Read()) {
+                if (reader.NodeType == XmlNodeType.Element && reader.Name == "summary") {
+                    using var subReader = reader.ReadSubtree();
+                    summaryDoc = XMLDocExtractor.GetNull(XElement.Load(subReader));
+                } else if (reader.NodeType == XmlNodeType.Element && reader.Name == "remarks") {
+                    using var subReader = reader.ReadSubtree();
+                    remarksDoc = XMLDocExtractor.GetNull(XElement.Load(subReader));
+                } else if (reader.NodeType == XmlNodeType.Element && reader.Name == "param") {
+                    using var subReader = reader.ReadSubtree();
+                    var paramName = reader.GetAttribute("name");
+                    if (paramName != null) {
+                        if (parametersDoc == null) {
+                            parametersDoc = [];
+                        }
+                        parametersDoc[paramName] = XMLDocExtractor.GetNull(XElement.Load(subReader));
+                    }
+                }
+            }
+        }
+
+        return (summaryDoc, remarksDoc, parametersDoc);
+    }
+
     public async Task<bool> ExtractTypeAsync(string id, ITypeSymbol typeSymbol, AssemblyData context) {
         var namespaceDocID = GetDocID(typeSymbol.ContainingNamespace);
         if (context.Namespaces.TryGetValue(namespaceDocID, out var nsSymbol)) {
@@ -211,12 +247,14 @@ public class CSharpExtractor {
             return ExtractEnum(id, (INamedTypeSymbol) typeSymbol, context);
         }
 
-        var xmlDoc = XElement.Parse($"<root>{typeSymbol.GetDocumentationCommentXml()}</root>");
+        var rawXml = typeSymbol.GetDocumentationCommentXml();
+        var (summaryDoc, remarksDoc, _) = ParseXmlDocumentation(rawXml);
+
         var symbol = new TypeSymbol(
             Name: typeSymbol.Name,
             ChildIDs: [],
-            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: summaryDoc,
+            Remarks: remarksDoc
         );
         context.Types[id] = symbol;
 
@@ -232,9 +270,8 @@ public class CSharpExtractor {
             return false;
         }
 
-        var xmlDoc = XElement.Parse($"<root>{methodSymbol.GetDocumentationCommentXml()}</root>");
         var parameters = new ParameterItem[methodSymbol.Parameters.Length];
-        var parametersDoc = XMLDocExtractor.GetParam(xmlDoc.Descendants("param"));
+        var (summaryDoc, remarksDoc, parametersDoc) = ParseXmlDocumentation(methodSymbol.GetDocumentationCommentXml());
 
         for (int i = 0; i < methodSymbol.Parameters.Length; i++) {
             var param = methodSymbol.Parameters[i];
@@ -242,7 +279,7 @@ public class CSharpExtractor {
                 Name: param.Name,
                 TypeID: GetDocID(param.Type),
                 TypeName: GetDisplayName(param.Type),
-                Documentation: parametersDoc.GetValueOrDefault(param.Name)
+                Documentation: parametersDoc?.GetValueOrDefault(param.Name)
             );
         }
 
@@ -251,21 +288,22 @@ public class CSharpExtractor {
             ReturnTypeID: GetDocID(methodSymbol.ReturnType),
             ReturnTypeName: GetDisplayName(methodSymbol.ReturnType),
             Parameters: parameters,
-            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: summaryDoc,
+            Remarks: remarksDoc
         );
         context.Methods[id] = symbol;
         return true;
     }
 
     public bool ExtractProperty(string id, IPropertySymbol propertySymbol, AssemblyData context) {
-        var xmlDoc = XElement.Parse($"<root>{propertySymbol.GetDocumentationCommentXml()}</root>");
+        var (summaryDoc, remarksDoc, _) = ParseXmlDocumentation(propertySymbol.GetDocumentationCommentXml());
+
         var symbol = new PropertySymbol(
             Name: propertySymbol.Name,
             TypeID: GetDocID(propertySymbol.Type),
             TypeName: GetDisplayName(propertySymbol.Type),
-            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: summaryDoc,
+            Remarks: remarksDoc
         );
         context.Properties[id] = symbol;
         return true;
@@ -277,13 +315,13 @@ public class CSharpExtractor {
             return false;
         }
 
-        var xmlDoc = XElement.Parse($"<root>{fieldSymbol.GetDocumentationCommentXml()}</root>");
+        var (summaryDoc, remarksDoc, _) = ParseXmlDocumentation(fieldSymbol.GetDocumentationCommentXml());
         var symbol = new FieldSymbol(
             Name: fieldSymbol.Name,
             TypeID: GetDocID(fieldSymbol.Type),
             TypeName: GetDisplayName(fieldSymbol.Type),
-            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: summaryDoc,
+            Remarks: remarksDoc
         );
         context.Fields[id] = symbol;
         return true;
@@ -300,9 +338,7 @@ public class CSharpExtractor {
             if (member.Kind == SymbolKind.Field && member is IFieldSymbol fs && fs.ConstantValue != null) {
                 var docID = GetDocID(fs);
 
-                var summary = XMLDocExtractor.GetNull(XElement.Parse($"<root>{fs.GetDocumentationCommentXml()}</root>").Descendants("summary").FirstOrDefault());
-                var remarks = XMLDocExtractor.GetNull(XElement.Parse($"<root>{fs.GetDocumentationCommentXml()}</root>").Descendants("remarks").FirstOrDefault());
-
+                var (summary, remarks, _) = ParseXmlDocumentation(fs.GetDocumentationCommentXml());
                 options.Add(new EnumItem(
                     Name: fs.Name,
                     Value: fs.ConstantValue!.ToString()!,
@@ -311,7 +347,6 @@ public class CSharpExtractor {
                     Remarks: remarks
                 ));
 
-                var fieldDoc = XElement.Parse($"<root>{fs.GetDocumentationCommentXml()}</root>");
                 context.Fields[docID] = new FieldSymbol(
                     Name: fs.Name,
                     TypeID: GetDocID(fs.Type),
@@ -322,14 +357,14 @@ public class CSharpExtractor {
             }
         }
 
-        var xmlDoc = XElement.Parse($"<root>{enumSymbol.GetDocumentationCommentXml()}</root>");
+        var (summaryDoc, remarksDoc, _) = ParseXmlDocumentation(enumSymbol.GetDocumentationCommentXml());
         var symbol = new EnumSymbol(
             Name: enumSymbol.Name,
             UnderlyingTypeID: GetDocID(enumSymbol.EnumUnderlyingType),
             UnderlyingTypeName: GetDisplayName(enumSymbol.EnumUnderlyingType),
             Options: [.. options],
-            Summary: XMLDocExtractor.GetNull(xmlDoc.Descendants("summary").FirstOrDefault()),
-            Remarks: XMLDocExtractor.GetNull(xmlDoc.Descendants("remarks").FirstOrDefault())
+            Summary: summaryDoc,
+            Remarks: remarksDoc
         );
 
         context.Types[id] = symbol;
