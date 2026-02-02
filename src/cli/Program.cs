@@ -40,6 +40,7 @@ app.Configure(c => {
     _ = c.AddCommand<CommandDev>("dev");
     _ = c.AddCommand<CommandStart>("start");
     _ = c.AddCommand<CommandInit>("init");
+    _ = c.AddCommand<CommandBuildCore>("debug-build-core");
 
     _ = c.AddBranch("new", b => {
         b.SetDescription("Create new content for the documentation site.");
