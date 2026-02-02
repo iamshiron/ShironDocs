@@ -5,8 +5,11 @@ using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.Extensions.DependencyInjection;
 using Shiron.Docs.Cli.Commands;
 using Shiron.Docs.Cli.Commands.New;
+using Shiron.Docs.Cli.DI;
+using Shiron.Docs.Engine;
 using Shiron.Docs.Engine.Extractor;
 using Shiron.Docs.Engine.Model;
 using Spectre.Console.Cli;
@@ -20,7 +23,11 @@ Directory.SetCurrentDirectory("run/");
 Console.WriteLine($"Set Current Directory to: {Directory.GetCurrentDirectory()}");
 #endif
 
-var app = new CommandApp();
+var services = new ServiceCollection();
+services.AddSingleton<IConfigManager, ConfigManager>();
+
+var registrar = new TypeRegistrar(services);
+var app = new CommandApp(registrar);
 app.Configure(c => {
     _ = c.SetApplicationName("Shiron Docs");
     _ = c.SetApplicationVersion("0.0.0");
