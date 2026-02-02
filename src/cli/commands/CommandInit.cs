@@ -38,6 +38,6 @@ public sealed class CommandInit(IConfigManager configManager) : AsyncCommand<Com
 
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Configuration initialized successfully![/]");
 
-        return 0;
+        return ExitCodes.Success;
     }
 }

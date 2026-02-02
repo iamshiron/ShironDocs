@@ -1,6 +1,7 @@
 
 using System.ComponentModel;
 using System.Text.Json;
+using Shiron.Docs.Cli.Services;
 using Shiron.Docs.Cli.Utils;
 using Shiron.Docs.Engine;
 using Shiron.Docs.Engine.PM;
@@ -22,16 +23,9 @@ public sealed class CommandBootstrap(IConfigManager configManager) : AsyncComman
 
         await _configManager.LoadConfigAsync();
         var config = _configManager.Config;
-
-        // Needs to be auto-detected or user-specified in the future
-        var packageManager = new PNPMPackageManager();
-        var viteBootstrap = new ViteBootstrap(new ViteBootstrapOptions() {
-            OutputDir = config.OutputDirectory
-        });
-
-        await viteBootstrap.BootstrapAsync(packageManager);
+        await CLIServices.BootstrapViteServerAsync(config);
 
         AnsiConsole.MarkupLine("[bold green]Bootstrap completed successfully![/]");
-        return 0;
+        return ExitCodes.Success;
     }
 }

@@ -6,12 +6,14 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.Extensions.DependencyInjection;
+using Shiron.Docs.Cli;
 using Shiron.Docs.Cli.Commands;
 using Shiron.Docs.Cli.Commands.New;
 using Shiron.Docs.Cli.DI;
 using Shiron.Docs.Engine;
 using Shiron.Docs.Engine.Extractor;
 using Shiron.Docs.Engine.Model;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 #if DEBUG
@@ -29,8 +31,8 @@ services.AddSingleton<IConfigManager, ConfigManager>();
 var registrar = new TypeRegistrar(services);
 var app = new CommandApp(registrar);
 app.Configure(c => {
-    _ = c.SetApplicationName("Shiron Docs");
-    _ = c.SetApplicationVersion("0.0.0");
+    _ = c.SetApplicationName(CLIConstants.AppName);
+    _ = c.SetApplicationVersion(CLIConstants.Version);
     _ = c.SetApplicationCulture(CultureInfo.CurrentCulture);
 
     _ = c.AddCommand<CommandBootstrap>("bootstrap");
@@ -46,16 +48,11 @@ app.Configure(c => {
     });
 });
 
-await app.RunAsync(args);
+var res = await app.RunAsync(args);
+if (res != 0) {
+    Environment.ExitCode = res;
 
-CSharpExtractor.Init();
-var extractor = new CSharpExtractor();
-extractor.AddProject("src/demo/Shiron.DemoProject.csproj");
-
-var res = await extractor.ExtractAsync();
-var json = JsonSerializer.Serialize(res, new JsonSerializerOptions {
-    WriteIndented = true
-});
-
-File.WriteAllText("output.json", json);
-Console.WriteLine("Extraction complete. Output written to output.json.");
+    AnsiConsole.WriteLine($"{CLIConstants.Prefix} [bold red]Error:[/] Command exited with code {res} ({ExitCodes.GetErrorMessage(res)}).");
+    ExitCodes.PrintHelp(res);
+    return;
+}
