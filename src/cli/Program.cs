@@ -53,7 +53,7 @@ var res = await app.RunAsync(args);
 if (res != 0) {
     Environment.ExitCode = res;
 
-    AnsiConsole.WriteLine($"{CLIConstants.Prefix} [bold red]Error:[/] Command exited with code {res} ({ExitCodes.GetErrorMessage(res)}).");
+    AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold red]Error:[/] Command exited with code {res} ({ExitCodes.GetErrorMessage(res)}).");
     ExitCodes.PrintHelp(res);
     return;
 }

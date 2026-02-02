@@ -29,11 +29,8 @@ public sealed class CommandBuild(IConfigManager configManager) : AsyncCommand<Co
         var assemblyInfos = await CLIServices.GenerateAssemblyInfo(projectFiles);
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Extracted {assemblyInfos.Count} assembly information entries.[/]");
 
-        // Temporarily store them into a json file
-        await JsonSerializer.SerializeAsync(File.OpenWrite("output.json"), assemblyInfos, new JsonSerializerOptions {
-            WriteIndented = true,
-            IndentSize = 4
-        });
+        await CLIServices.GenerateDocumenationSitesAsync(config, [.. assemblyInfos]);
+        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Static site built successfully![/]");
 
         return ExitCodes.Success;
     }
