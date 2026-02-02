@@ -18,6 +18,12 @@ public class Config {
     public string AppVersion { get; set; } = "1.0.0";
     [JsonPropertyName("appFooter")]
     public string AppFooter { get; set; } = "Powered by Shiron Docs";
+
+    // Advanced configuration options
+    [JsonPropertyName("viteDevCommand")]
+    public string ViteDevCommand { get; set; } = "vite dev";
+    [JsonPropertyName("viteBuildCommand")]
+    public string ViteBuildCommand { get; set; } = "vite build";
 }
 
 public interface IConfigManager {

@@ -1,5 +1,6 @@
 
 using System.ComponentModel;
+using System.Text.Json;
 using Shiron.Docs.Cli.Services;
 using Shiron.Docs.Engine;
 using Spectre.Console;
@@ -23,6 +24,16 @@ public sealed class CommandBuild(IConfigManager configManager) : AsyncCommand<Co
         }
 
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Building Static Site...[/]");
+        var projectFiles = await CLIServices.GetProjectFilesAsync(config);
+        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Found {projectFiles.Length} project files.[/]");
+        var assemblyInfos = await CLIServices.GenerateAssemblyInfo(projectFiles);
+        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Extracted {assemblyInfos.Count} assembly information entries.[/]");
+
+        // Temporarily store them into a json file
+        await JsonSerializer.SerializeAsync(File.OpenWrite("output.json"), assemblyInfos, new JsonSerializerOptions {
+            WriteIndented = true,
+            IndentSize = 4
+        });
 
         return ExitCodes.Success;
     }
