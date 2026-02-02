@@ -20,13 +20,13 @@ public sealed class CommandBootstrap(IConfigManager configManager) : AsyncComman
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         AnsiConsole.MarkupLine("[bold green]Bootstrapping Shiron Docs environment...[/]");
 
-        await _configManager.LoadConfigAsync("shirondocs.json");
-        System.Console.WriteLine($"Config: {_configManager.Config.AppName}");
+        await _configManager.LoadConfigAsync();
+        var config = _configManager.Config;
 
         // Needs to be auto-detected or user-specified in the future
         var packageManager = new PNPMPackageManager();
         var viteBootstrap = new ViteBootstrap(new ViteBootstrapOptions() {
-            OutputDir = "_site"
+            OutputDir = config.OutputDirectory
         });
 
         await viteBootstrap.BootstrapAsync(packageManager);

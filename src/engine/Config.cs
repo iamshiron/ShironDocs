@@ -22,22 +22,30 @@ public class Config {
 
 public interface IConfigManager {
     Config Config { get; }
-    Task LoadConfigAsync(string path);
+    Task LoadConfigAsync();
+    Task SaveConfigAsync(Config config);
 }
 
 public class ConfigManager : IConfigManager {
+    public static string ConfigFileName { get; } = "shirondocs.json";
+
     public Config Config { get; private set; } = new();
 
-    public async Task LoadConfigAsync(string path) {
-        if (!File.Exists(path)) {
+    public async Task LoadConfigAsync() {
+        if (!File.Exists(ConfigFileName)) {
             return;
         }
 
-        var json = await File.ReadAllTextAsync(path);
+        var json = await File.ReadAllTextAsync(ConfigFileName);
         var config = JsonSerializer.Deserialize<Config>(json);
 
         if (config != null) {
             Config = config;
         }
+    }
+
+    public async Task SaveConfigAsync(Config config) {
+        var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(ConfigFileName, json);
     }
 }
