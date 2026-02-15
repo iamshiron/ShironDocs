@@ -1,6 +1,4 @@
-
 using System.ComponentModel;
-using System.IO.Compression;
 using System.Text.Json;
 using Shiron.Docs.Cli.Services;
 using Shiron.Docs.Cli.Utils;
@@ -9,6 +7,7 @@ using Shiron.Docs.Engine.PM;
 using Shiron.Docs.Engine.Vite;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using IPackageManager = Shiron.Docs.Engine.PM.IPackageManager;
 
 namespace Shiron.Docs.Cli.Commands;
 
@@ -18,14 +17,17 @@ public sealed class CommandBootstrap(IConfigManager configManager) : AsyncComman
 
     public class Settings : CommandSettings {
         [CommandOption("-t|--template <template_file>")]
-        public string TemplateFile { get; set; } = "template.zip";
+        public string? TemplateFile { get; set; } = null;
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
-        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Bootstrapping Shiron Docs environment...[/]");
+    public async override Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+        AnsiConsole.MarkupLine("[bold green]Bootstrapping Shiron Docs environment...[/]");
+
+        if (settings.TemplateFile == null) throw new ArgumentNullException(nameof(settings.TemplateFile), "As of now, template file must be specified.");
 
         await _configManager.LoadConfigAsync();
         var config = _configManager.Config;
+        var pm = await PackageManagerUtils.DetectPackageManager();
 
         var templateFile = Path.Combine(Directory.GetCurrentDirectory(), settings.TemplateFile);
         if (!File.Exists(templateFile)) {
@@ -34,27 +36,12 @@ public sealed class CommandBootstrap(IConfigManager configManager) : AsyncComman
         }
 
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold aqua]Extracting template files...[/]");
-        using var zipFile = ZipFile.OpenRead(templateFile);
-        foreach (var entry in zipFile.Entries) {
-            var destinationPath = Path.Combine(config.OutputDirectory, entry.FullName);
-            var isDirectory = entry.FullName.EndsWith("/") || string.IsNullOrEmpty(entry.Name);
-            if (isDirectory) {
-                _ = Directory.CreateDirectory(destinationPath);
-                continue;
-            }
-
-            var destinationDir = Path.GetDirectoryName(destinationPath);
-            if (!string.IsNullOrEmpty(destinationDir) && !Directory.Exists(destinationDir)) {
-                _ = Directory.CreateDirectory(destinationDir);
-            }
-
-            entry.ExtractToFile(destinationPath, overwrite: true);
-        }
+        await CLIServices.InitViteServerFilesAsync(config, templateFile);
 
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold aqua]Setting up Vite server...[/]");
-        await CLIServices.BootstrapViteServerAsync(config);
+        await CLIServices.InstallDependenciesAsync(config, pm);
 
-        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Bootstrap completed successfully![/]");
+        AnsiConsole.MarkupLine("[bold green]Bootstrap completed successfully![/]");
         return ExitCodes.Success;
     }
 }

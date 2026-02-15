@@ -1,4 +1,3 @@
-
 using System.ComponentModel;
 using System.Text.Json;
 using Shiron.Docs.Cli.Services;
@@ -15,20 +14,24 @@ public sealed class CommandBuild(IConfigManager configManager) : AsyncCommand<Co
     public class Settings : CommandSettings {
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+    public async override Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         await _configManager.LoadConfigAsync();
 
         var config = _configManager.Config;
-        if (!Directory.Exists(config.OutputDirectory)) {
-            return ExitCodes.ViteServerNotSetup;
-        }
+        if (!Directory.Exists(config.OutputDirectory)) return ExitCodes.ViteServerNotSetup;
 
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Building Static Site...[/]");
-        var projectFiles = await CLIServices.GetProjectFilesAsync(config);
+        var projectFiles = CLIServices.GetProjectFiles(config);
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Found {projectFiles.Length} project files.[/]");
         var assemblyInfos = await CLIServices.GenerateAssemblyInfo(projectFiles);
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Extracted {assemblyInfos.Count} assembly information entries.[/]");
 
+        try {
+            await CLIServices.GenerateDocumenationSitesAsync(config, [.. assemblyInfos]);
+        } catch (Exception e) {
+            AnsiConsole.WriteException(e);
+            return ExitCodes.UnknownError;
+        }
         await CLIServices.GenerateDocumenationSitesAsync(config, [.. assemblyInfos]);
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Static site built successfully![/]");
 

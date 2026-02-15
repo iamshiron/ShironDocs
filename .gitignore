@@ -1,6 +1,8 @@
 **/bin
 **/obj
 
+.idea/
+
 node_modules/
 
 BenchmarkDotNet.Artifacts

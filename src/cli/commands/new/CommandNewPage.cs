@@ -1,4 +1,3 @@
-
 using System.ComponentModel;
 using Spectre.Console.Cli;
 
@@ -9,7 +8,7 @@ public sealed class CommandNewPage : AsyncCommand<CommandNewPage.Settings> {
     public class Settings : CommandSettings {
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
+    public override Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken) {
         throw new NotImplementedException();
     }
 }

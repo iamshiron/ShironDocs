@@ -1,18 +1,11 @@
-
 using System.Globalization;
-using System.Text.Json;
-using Microsoft.Build.Locator;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.MSBuild;
+using System.Runtime.InteropServices.ComTypes;
 using Microsoft.Extensions.DependencyInjection;
 using Shiron.Docs.Cli;
 using Shiron.Docs.Cli.Commands;
 using Shiron.Docs.Cli.Commands.New;
 using Shiron.Docs.Cli.DI;
 using Shiron.Docs.Engine;
-using Shiron.Docs.Engine.Extractor;
-using Shiron.Docs.Engine.Model;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -31,8 +24,11 @@ services.AddSingleton<IConfigManager, ConfigManager>();
 var registrar = new TypeRegistrar(services);
 var app = new CommandApp(registrar);
 app.Configure(c => {
+    _ = c.PropagateExceptions();
+
     _ = c.SetApplicationName(CLIConstants.AppName);
     _ = c.SetApplicationVersion(CLIConstants.Version);
+
     _ = c.SetApplicationCulture(CultureInfo.CurrentCulture);
 
     _ = c.AddCommand<CommandBootstrap>("bootstrap");
@@ -49,11 +45,16 @@ app.Configure(c => {
     });
 });
 
-var res = await app.RunAsync(args);
-if (res != 0) {
-    Environment.ExitCode = res;
+try {
+    var res = await app.RunAsync(args);
+    if (res != 0) {
+        Environment.ExitCode = res;
 
-    AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold red]Error:[/] Command exited with code {res} ({ExitCodes.GetErrorMessage(res)}).");
-    ExitCodes.PrintHelp(res);
-    return;
+        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold red]Error:[/] Command exited with code {res} ({ExitCodes.GetErrorMessage(res)}).");
+        ExitCodes.PrintHelp(res);
+    }
+} catch (NotImplementedException) {
+    AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold red]Error:[/] Command not implemented.");
+} catch (Exception e) {
+    AnsiConsole.WriteException(e);
 }
