@@ -6,6 +6,7 @@ public interface IPackageManager {
     string Command { get; }
 
     Task InstallAsync(string? workingDir);
+    Task RunAsync(string[] args, string? workingDir);
     Task<string> GetVersionAsync();
 }
 
@@ -13,7 +14,12 @@ public class NpmPackageManager : IPackageManager {
     public virtual string Command => "npm";
 
     public async Task InstallAsync(string? workingDir) {
-        _ = await ShellUtils.RunAsync(Command, ["install"], workingDir);
+        var current = Directory.GetCurrentDirectory();
+        if (workingDir != null) {
+            Directory.SetCurrentDirectory(workingDir);
+        }
+        await ShellUtils.RunAsync(Command, ["install"], null);
+        Directory.SetCurrentDirectory(current);
     }
 
     public async Task<string> GetVersionAsync() {
@@ -25,6 +31,15 @@ public class NpmPackageManager : IPackageManager {
             Console.WriteLine(e);
             throw;
         }
+    }
+
+    public async Task RunAsync(string[] args, string? workingDir = null) {
+        var current = Directory.GetCurrentDirectory();
+        if (workingDir != null) {
+            Directory.SetCurrentDirectory(workingDir);
+        }
+        await ShellUtils.RunAsync(Command, args, null);
+        Directory.SetCurrentDirectory(current);
     }
 }
 
@@ -52,7 +67,6 @@ public static class PackageManagerUtils {
             }
 
             try {
-                Console.WriteLine($"Checking pm {pm.Command}...");
                 var version = await pm.GetVersionAsync();
                 if (!string.IsNullOrEmpty(version)) {
                     return pm;

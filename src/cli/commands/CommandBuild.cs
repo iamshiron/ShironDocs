@@ -21,18 +21,6 @@ public sealed class CommandBuild(IConfigManager configManager) : AsyncCommand<Co
         if (!Directory.Exists(config.OutputDirectory)) return ExitCodes.ViteServerNotSetup;
 
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Building Static Site...[/]");
-        var projectFiles = CLIServices.GetProjectFiles(config);
-        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Found {projectFiles.Length} project files.[/]");
-        var assemblyInfos = await CLIServices.GenerateAssemblyInfo(projectFiles);
-        AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Extracted {assemblyInfos.Count} assembly information entries.[/]");
-
-        try {
-            await CLIServices.GenerateDocumenationSitesAsync(config, [.. assemblyInfos]);
-        } catch (Exception e) {
-            AnsiConsole.WriteException(e);
-            return ExitCodes.UnknownError;
-        }
-        await CLIServices.GenerateDocumenationSitesAsync(config, [.. assemblyInfos]);
         AnsiConsole.MarkupLine($"{CLIConstants.Prefix} [bold green]Static site built successfully![/]");
 
         return ExitCodes.Success;
